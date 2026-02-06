@@ -1,0 +1,7 @@
+[project]
+name = "aggregator-app"
+version = "0.1.0"
+description = "Events aggregator app"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
