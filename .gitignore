@@ -4,6 +4,5 @@ __pycache__/
 .pytest_cache/
 
 .env
-.python-version
 
 *-secret.yaml
