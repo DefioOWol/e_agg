@@ -1,9 +1,10 @@
 name: Deploy to LMS
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Lint and test"]
+    types:
+      - completed
 
 jobs:
   build:
