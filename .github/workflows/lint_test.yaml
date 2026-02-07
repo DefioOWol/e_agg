@@ -36,18 +36,23 @@ jobs:
   test:
     needs: lint
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DATABASE_NAME: test_db
+      POSTGRES_PORT: 5432
 
     services:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
+          POSTGRES_USER: ${{ env.POSTGRES_USERNAME }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DATABASE_NAME }}
         ports:
-          - 5432:5432
+          - ${{ env.POSTGRES_PORT }}:5432
         options: >-
-          --health-cmd="pg_isready -U postgres"
+          --health-cmd="pg_isready -U ${{ env.POSTGRES_USERNAME }}"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -70,10 +75,6 @@ jobs:
 
       - name: Run tests
         env:
-          POSTGRES_USERNAME: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DATABASE_NAME: test_db
           POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
         run: uv run pytest -v
         working-directory: aggregator_app
