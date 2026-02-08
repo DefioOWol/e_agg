@@ -30,11 +30,11 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.postgres_username.get_secret_value()}",
-            f":{self.postgres_password.get_secret_value()}",
-            f"@{self.postgres_host}",
-            f":{self.postgres_port}",
-            f"/{self.postgres_database_name}",
+            f"postgresql+asyncpg://{self.postgres_username.get_secret_value()}"
+            f":{self.postgres_password.get_secret_value()}"
+            f"@{self.postgres_host}"
+            f":{self.postgres_port}"
+            f"/{self.postgres_database_name}"
         )
 
 

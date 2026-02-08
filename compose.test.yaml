@@ -6,8 +6,6 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-aggregator_db}
-    ports:
-      - ${DB_TEST_PORT:-5432}:5432
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${DB_USER:-postgres}"]
       interval: ${DB_HEALTHCHECK_INTERVAL:-10s}
@@ -24,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DATABASE_NAME: ${DB_NAME:-aggregator_db}
       POSTGRES_HOST: ${DB_TEST_CONTAINER_NAME:-db_test}
-      POSTGRES_PORT: ${DB_TEST_PORT:-5432}
+      POSTGRES_PORT: 5432
       LMS_API_KEY: ${LMS_API_KEY:?}
     depends_on:
       db_test:

@@ -28,7 +28,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DATABASE_NAME: ${DB_NAME:-aggregator_db}
       POSTGRES_HOST: ${DB_CONTAINER_NAME:-db}
-      POSTGRES_PORT: ${DB_PORT:-5432}
+      POSTGRES_PORT: 5432
       LMS_API_KEY: ${LMS_API_KEY:?}
     volumes:
       - ./aggregator_app/alembic/versions:/app/alembic/versions
