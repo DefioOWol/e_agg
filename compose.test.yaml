@@ -1,0 +1,31 @@
+services:
+  db_test:
+    container_name: ${DB_TEST_CONTAINER_NAME:-db_test}
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-aggregator_db}
+    ports:
+      - ${DB_TEST_PORT:-5432}:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER:-postgres}"]
+      interval: ${DB_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${DB_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${DB_HEALTHCHECK_RETRIES:-5}
+
+  aggregator_app_test:
+    container_name: ${APP_TEST_CONTAINER_NAME:-aggregator_app_test}
+    build:
+      context: .
+      target: test
+    environment:
+      POSTGRES_USERNAME: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DATABASE_NAME: ${DB_NAME:-aggregator_db}
+      POSTGRES_HOST: ${DB_TEST_CONTAINER_NAME:-db_test}
+      POSTGRES_PORT: ${DB_TEST_PORT:-5432}
+      LMS_API_KEY: ${LMS_API_KEY:?}
+    depends_on:
+      db_test:
+        condition: service_healthy
