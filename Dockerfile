@@ -15,6 +15,8 @@ FROM builder AS runner
 
 COPY ./entrypoint.sh /app
 
+RUN chmod +x /app/entrypoint.sh
+
 CMD ["./entrypoint.sh"]
 
 
