@@ -1,0 +1,40 @@
+services:
+  db:
+    container_name: ${DB_CONTAINER_NAME:-db}
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-aggregator_db}
+    ports:
+      - ${DB_PORT:-5432}:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER:-postgres}"]
+      interval: ${DB_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${DB_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${DB_HEALTHCHECK_RETRIES:-5}
+
+  aggregator_app:
+    container_name: ${APP_CONTAINER_NAME:-aggregator_app}
+    build:
+      context: .
+      target: runner
+    ports:
+      - ${APP_PORT:-8000}:80
+    environment:
+      POSTGRES_USERNAME: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DATABASE_NAME: ${DB_NAME:-aggregator_db}
+      POSTGRES_HOST: ${DB_CONTAINER_NAME:-db}
+      POSTGRES_PORT: ${DB_PORT:-5432}
+      LMS_API_KEY: ${LMS_API_KEY:?}
+    volumes:
+      - ./aggregator_app/alembic/versions:/app/alembic/versions
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
