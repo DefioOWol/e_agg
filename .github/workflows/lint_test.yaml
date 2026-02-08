@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: 3.12
 
       - name: Install uv
         run: pip install uv
@@ -39,7 +39,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:latest
+        image: postgres:16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: 3.12
 
       - name: Install uv
         run: pip install uv
@@ -75,5 +75,6 @@ jobs:
           POSTGRES_DATABASE_NAME: test_db
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
+          LMS_API_KEY: ${{ secrets.LMS_API_KEY }}
         run: uv run pytest -v
         working-directory: aggregator_app
