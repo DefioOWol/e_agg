@@ -30,6 +30,8 @@ services:
       POSTGRES_HOST: ${DB_CONTAINER_NAME:-db}
       POSTGRES_PORT: ${DB_PORT:-5432}
       LMS_API_KEY: ${LMS_API_KEY:?}
+    volumes:
+      - ./aggregator_app/alembic/versions:/app/alembic/versions
     depends_on:
       db:
         condition: service_healthy

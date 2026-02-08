@@ -30,15 +30,15 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        url = URL.create(
-            drivername="postgresql+asyncpg",
-            username=self.postgres_username.get_secret_value(),
-            password=self.postgres_password.get_secret_value(),
-            host=self.postgres_host,
-            port=self.postgres_port,
-            database=self.postgres_database_name,
+        return (
+            "postgresql+asyncpg://{0}:{1}@{2}:{3}/{4}".format(
+                self.postgres_username.get_secret_value(),
+                self.postgres_password.get_secret_value(),
+                self.postgres_host,
+                self.postgres_port,
+                self.postgres_database_name
+            )
         )
-        return str(url)
 
 
 settings = Settings()
