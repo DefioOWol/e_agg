@@ -3,11 +3,11 @@ name: Deploy to LMS
 on:
   workflow_run:
     workflows: ["Lint and test"]
-    types:
-      - completed
+    types: [completed]
 
 jobs:
   build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.tags }}
