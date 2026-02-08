@@ -1,4 +1,5 @@
 """ORM модели."""
+
 from sqlalchemy.orm import DeclarativeBase
 
 

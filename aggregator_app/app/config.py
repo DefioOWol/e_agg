@@ -2,7 +2,6 @@
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
-from sqlalchemy.engine import URL
 
 
 class Settings(BaseSettings):
@@ -31,13 +30,11 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         return (
-            "postgresql+asyncpg://{0}:{1}@{2}:{3}/{4}".format(
-                self.postgres_username.get_secret_value(),
-                self.postgres_password.get_secret_value(),
-                self.postgres_host,
-                self.postgres_port,
-                self.postgres_database_name
-            )
+            f"postgresql+asyncpg://{self.postgres_username.get_secret_value()}",
+            f":{self.postgres_password.get_secret_value()}",
+            f"@{self.postgres_host}",
+            f":{self.postgres_port}",
+            f"/{self.postgres_database_name}",
         )
 
 
