@@ -1,0 +1,79 @@
+name: Lint and test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: aggregator_app
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+        working-directory: aggregator_app
+
+      - name: Ruff lint check
+        run: uv run ruff check .
+        working-directory: aggregator_app
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: aggregator_app
+
+      - name: Run tests
+        env:
+          POSTGRES_USERNAME: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DATABASE_NAME: test_db
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+        run: uv run pytest -v
+        working-directory: aggregator_app
