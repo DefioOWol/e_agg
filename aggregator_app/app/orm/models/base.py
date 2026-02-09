@@ -1,4 +1,4 @@
-"""ORM модели."""
+"""Базовые модели."""
 
 from sqlalchemy.orm import DeclarativeBase
 
