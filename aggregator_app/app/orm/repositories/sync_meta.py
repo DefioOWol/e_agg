@@ -1,8 +1,6 @@
 """Репозиторий метаданных синхронизации."""
 
-from collections.abc import Any
-
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from app.orm.models import SyncMeta
 from app.orm.repositories.base import BaseRepository
@@ -12,7 +10,7 @@ class SyncMetaRepository(BaseRepository):
     """Репозиторий метаданных синхронизации."""
 
     async def get_or_add(
-        self, for_update: bool = False
+        self, *, for_update: bool = False
     ) -> tuple[SyncMeta, bool]:
         """Получить или добавить метаданные синхронизации."""
         stmt = select(SyncMeta).where(SyncMeta.id == 1)
@@ -23,13 +21,3 @@ class SyncMetaRepository(BaseRepository):
             obj = SyncMeta(id=1)
             self._session.add(obj)
         return obj, is_new
-
-    async def update(self, json_data: dict[str, Any]) -> SyncMeta:
-        """Обновить метаданные синхронизации."""
-        stmt = (
-            update(SyncMeta)
-            .where(SyncMeta.id == 1)
-            .values(**json_data)
-            .returning(SyncMeta)
-        )
-        return (await self._session.execute(stmt)).scalar_one()
