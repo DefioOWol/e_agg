@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from enum import Enum as PyEnum
 
-from sqlalchemy import Date, DateTime, Enum, Integer
+from sqlalchemy import CheckConstraint, Date, DateTime, Enum, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.orm.models.base import Base
@@ -21,9 +21,10 @@ class SyncMeta(Base):
     """Модель метаданных синхронизации."""
 
     __tablename__ = "sync_meta"
+    __table_args__ = (CheckConstraint("id = 1", name="ck_sync_meta_singleton"),)
 
     id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True, nullable=False
+        Integer, primary_key=True, autoincrement=False, nullable=False
     )
     last_sync_time: Mapped[datetime] = mapped_column(DateTime, default=None)
     last_changed_at: Mapped[date] = mapped_column(Date, default=None)
