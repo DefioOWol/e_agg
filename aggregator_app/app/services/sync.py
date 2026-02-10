@@ -2,22 +2,24 @@
 
 import logging
 from datetime import UTC, date, datetime
-from typing import Any
 
 from aiohttp.client_exceptions import ClientResponseError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from sqlalchemy import DateTime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.orm.db_manager import db_manager
-from app.orm.models import Base, Event, EventStatus, Place, SyncMeta, SyncStatus
+from app.orm.models import Event, Place, SyncMeta, SyncStatus
 from app.orm.repositories import (
     EventRepository,
     PlaceRepository,
     SyncMetaRepository,
 )
-from app.services.events_provider import EventsPaginator, EventsProviderClient
+from app.services.events_provider import (
+    EventsPaginator,
+    EventsProviderClient,
+    EventsProviderParser,
+)
 
 logging.basicConfig(level=logging.INFO, filename="app.log", filemode="w")
 logger = logging.getLogger(__name__)
@@ -88,7 +90,8 @@ class SyncService:
             await session.commit()
 
         logger.info(
-            "Статус синхронизации установлен в %s", sync_meta.sync_status.value
+            "Статус синхронизации установлен в '%s'",
+            sync_meta.sync_status.value,
         )
 
         try:
@@ -108,12 +111,11 @@ class SyncService:
             await self._update_db(
                 event_data_list, place_data_list, latest_changed_at
             )
-
-        logger.info("Синхронизация завершена")
+            logger.info("Синхронизация завершена")
 
     async def _run_fetch(
         self, sync_meta: SyncMeta
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], date]:
+    ) -> tuple[list[Event], list[Place], date]:
         """Загрузить данные из API."""
         latest_changed_at = sync_meta.last_changed_at or self.DEFAULT_CHANGED_AT
         logger.info(
@@ -124,18 +126,17 @@ class SyncService:
         async with EventsProviderClient() as client:
             event_data_dict = {}
             place_data_dict = {}
+
+            parser = EventsProviderParser()
             paginator = EventsPaginator(client, latest_changed_at)
 
             async for event in paginator:
-                place = event.pop("place")
-                self._prepare_place(place)
-                self._prepare_event(event)
-
-                place_data_dict[place["id"]] = place
-                event_data_dict[event["id"]] = event | {"place_id": place["id"]}
+                event_data, place_data = parser.parse_event_dict(event)
+                place_data_dict[place_data["id"]] = place_data
+                event_data_dict[event_data["id"]] = event_data
                 latest_changed_at = max(
                     latest_changed_at,
-                    event["changed_at"].date(),
+                    event_data["changed_at"].date(),
                 )
 
         logger.info(
@@ -151,8 +152,8 @@ class SyncService:
 
     async def _update_db(
         self,
-        event_data_list: list[dict[str, Any]],
-        place_data_list: list[dict[str, Any]],
+        event_data_list: list[Event],
+        place_data_list: list[Place],
         latest_changed_at: date,
     ):
         """Обновить базу данных."""
@@ -188,7 +189,7 @@ class SyncService:
             await session.commit()
 
         logger.info(
-            "Статус синхронизации возвращен к %s", prev_sync_status.value
+            "Статус синхронизации возвращен к '%s'", prev_sync_status.value
         )
 
     async def _get_sync_meta(self, session: AsyncSession) -> SyncMeta:
@@ -207,20 +208,6 @@ class SyncService:
             return datetime.now(UTC)
         return last_sync_time + self.SYNC_JOB_TRIGGER.interval
 
-    def _prepare_place(self, place_data: dict[str, Any]):
-        """Подготовить данные места проведения."""
-        self._normalize_datetime(place_data, Place)
 
-    def _prepare_event(self, event_data: dict[str, Any]):
-        """Подготовить данные события."""
-        del event_data["number_of_visitors"]
-        event_data["status"] = EventStatus(event_data["status"])
-        self._normalize_datetime(event_data, Event)
-
-    def _normalize_datetime(self, data: dict[str, Any], cls_: type[Base]):
-        """Нормализовать даты."""
-        for c in cls_.__table__.c:
-            if isinstance(c.type, DateTime) and c.key in data:
-                data[c.key] = datetime.fromisoformat(data[c.key]).astimezone(
-                    UTC
-                )
+scheduler = AsyncIOScheduler(timezone=UTC)
+sync_service = SyncService(scheduler)
