@@ -1,13 +1,15 @@
 """Модуль взаимодействия с EventsProviderAPI."""
 
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any
 
 import backoff
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientResponseError
+from sqlalchemy import DateTime
 
 from app.config import settings
+from app.orm.models import Base, Event, EventStatus, Place
 
 
 class EventsProviderClient:
@@ -90,3 +92,34 @@ class EventsPaginator:
         event = self._events[self._current]
         self._current += 1
         return event
+
+
+class EventsProviderParser:
+    """Парсер данных EventsProviderAPI."""
+
+    def parse_event_dict(
+        self, data: dict[str, Any]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Разобрать событие и вернуть словари с данными."""
+        place_data = data.pop("place")
+        self._prepare_place(place_data)
+        self._prepare_event(data)
+        return data | {"place_id": place_data["id"]}, place_data
+
+    def _prepare_event(self, event_data: dict[str, Any]):
+        """Подготовить данные события."""
+        del event_data["number_of_visitors"]
+        event_data["status"] = EventStatus(event_data["status"])
+        self._convert_datetime(event_data, Event)
+
+    def _prepare_place(self, place_data: dict[str, Any]):
+        """Подготовить данные места проведения."""
+        self._convert_datetime(place_data, Place)
+
+    def _convert_datetime(self, data: dict[str, Any], cls_: type[Base]):
+        """Конвертировать даты."""
+        for c in cls_.__table__.c:
+            if isinstance(c.type, DateTime) and c.key in data:
+                data[c.key] = datetime.fromisoformat(data[c.key]).astimezone(
+                    UTC
+                )
