@@ -22,7 +22,7 @@ services:
       context: .
       target: runner
     ports:
-      - ${APP_PORT:-8000}:80
+      - ${APP_PORT:-8000}:8000
     environment:
       POSTGRES_USERNAME: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
