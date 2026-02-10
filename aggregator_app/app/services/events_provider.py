@@ -15,7 +15,7 @@ class EventsProviderClient:
 
     BASE_URL = "http://events-provider.dev-1.python-labs.ru"
 
-    def __init__(self, total_timeout: int = 30, connect_timeout: int = 10):
+    def __init__(self, total_timeout: int = 10, connect_timeout: int = 5):
         """Инициализировать клиент."""
         timeout = ClientTimeout(total=total_timeout, connect=connect_timeout)
         self._session = ClientSession(
@@ -27,12 +27,8 @@ class EventsProviderClient:
 
     @backoff.on_exception(
         backoff.expo,
-        (ClientTimeout, ClientResponseError),
+        (TimeoutError, ClientResponseError),
         max_tries=3,
-        giveup=lambda e: (
-            isinstance(e, ClientResponseError)
-            and e.status not in {429, 500, 502, 503, 504}
-        ),
     )
     async def get_events(
         self, changed_at: date, cursor: str | None = None
