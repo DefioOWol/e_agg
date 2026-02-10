@@ -37,3 +37,10 @@ class SyncMeta(Base):
     sync_status: Mapped[SyncStatus] = mapped_column(
         Enum(SyncStatus), default=SyncStatus.NEVER, nullable=False
     )
+
+    def __str__(self) -> str:
+        return (
+            f"SyncMeta(id={self.id}, last_sync_time={self.last_sync_time}, "
+            f"last_changed_at={self.last_changed_at}, "
+            f"sync_status='{self.sync_status.value}')"
+        )
