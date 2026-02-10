@@ -68,10 +68,8 @@ class SyncService:
     def trigger_job(self):
         """Вызвать задачу синхронизации."""
         logger.info("Запрошен внеплановый запуск задачи")
-        self._scheduler.scheduled_job(
-            self.SYNC_JOB_TRIGGER,
-            id=self.SYNC_JOB_ID,
-            max_instances=1,
+        self._scheduler.modify_job(
+            self.SYNC_JOB_ID,
             next_run_time=datetime.now(UTC),
         )
 
