@@ -1,6 +1,8 @@
 """Репозиторий мест проведения событий."""
 
-from collections.abc import Any
+from typing import Any
+
+from sqlalchemy.dialects.postgresql import insert
 
 from app.orm.models import Place
 from app.orm.repositories.base import BaseRepository
@@ -9,8 +11,10 @@ from app.orm.repositories.base import BaseRepository
 class PlaceRepository(BaseRepository):
     """Репозиторий мест проведения событий."""
 
-    def add(self, json_data: dict[str, Any]) -> Place:
-        """Добавить место проведения события."""
-        obj = Place(**json_data)
-        self._session.add(obj)
-        return obj
+    async def upsert(self, json_data_list: list[dict[str, Any]]):
+        stmt = insert(Place).values(json_data_list)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[Place.id],
+            set_={c.key: c for c in stmt.excluded if not c.primary_key},
+        )
+        await self._session.execute(stmt)

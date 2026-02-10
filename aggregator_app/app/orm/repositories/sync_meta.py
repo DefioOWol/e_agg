@@ -18,6 +18,6 @@ class SyncMetaRepository(BaseRepository):
             stmt = stmt.with_for_update()
         obj = (await self._session.execute(stmt)).scalar_one_or_none()
         if is_new := obj is None:
-            obj = SyncMeta(id=1)
+            obj = SyncMeta()
             self._session.add(obj)
         return obj, is_new
