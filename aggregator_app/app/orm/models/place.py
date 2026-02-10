@@ -21,5 +21,9 @@ class Place(Base):
     city: Mapped[str] = mapped_column(String(32), nullable=False)
     address: Mapped[str] = mapped_column(String(64), nullable=False)
     seats_pattern: Mapped[str] = mapped_column(String(32), nullable=False)
-    changed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )

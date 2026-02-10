@@ -29,8 +29,8 @@ def upgrade() -> None:
         sa.Column("city", sa.String(length=32), nullable=False),
         sa.Column("address", sa.String(length=64), nullable=False),
         sa.Column("seats_pattern", sa.String(length=32), nullable=False),
-        sa.Column("changed_at", sa.DateTime(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("changed_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -38,16 +38,20 @@ def upgrade() -> None:
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("name", sa.String(length=64), nullable=False),
         sa.Column("place_id", sa.UUID(), nullable=False),
-        sa.Column("event_time", sa.DateTime(), nullable=False),
-        sa.Column("registration_deadline", sa.DateTime(), nullable=False),
+        sa.Column("event_time", sa.DateTime(timezone=True), nullable=False),
+        sa.Column(
+            "registration_deadline", sa.DateTime(timezone=True), nullable=False
+        ),
         sa.Column(
             "status",
             sa.Enum("NEW", "PUBLISHED", name="eventstatus"),
             nullable=False,
         ),
-        sa.Column("changed_at", sa.DateTime(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("status_changed_at", sa.DateTime(), nullable=False),
+        sa.Column("changed_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column(
+            "status_changed_at", sa.DateTime(timezone=True), nullable=False
+        ),
         sa.ForeignKeyConstraint(
             ["place_id"],
             ["places.id"],

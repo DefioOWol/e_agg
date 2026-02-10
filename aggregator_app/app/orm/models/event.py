@@ -31,15 +31,21 @@ class Event(Base):
         UUID(as_uuid=True), ForeignKey("places.id"), nullable=False
     )
     place: Mapped["Place"] = relationship()
-    event_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    event_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     registration_deadline: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False
+        DateTime(timezone=True), nullable=False
     )
     status: Mapped[EventStatus] = mapped_column(
         Enum(EventStatus), nullable=False
     )
-    changed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     status_changed_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False
+        DateTime(timezone=True), nullable=False
     )

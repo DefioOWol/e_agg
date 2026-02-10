@@ -24,10 +24,16 @@ class SyncMeta(Base):
     __table_args__ = (CheckConstraint("id = 1", name="ck_sync_meta_singleton"),)
 
     id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=False, nullable=False
+        Integer,
+        primary_key=True,
+        default=1,
+        autoincrement=False,
+        nullable=False,
     )
-    last_sync_time: Mapped[datetime] = mapped_column(DateTime, default=None)
-    last_changed_at: Mapped[date] = mapped_column(Date, default=None)
+    last_sync_time: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_changed_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     sync_status: Mapped[SyncStatus] = mapped_column(
         Enum(SyncStatus), default=SyncStatus.NEVER, nullable=False
     )

@@ -25,8 +25,8 @@ def upgrade() -> None:
     op.create_table(
         "sync_meta",
         sa.Column("id", sa.Integer(), autoincrement=False, nullable=False),
-        sa.Column("last_sync_time", sa.DateTime(), nullable=False),
-        sa.Column("last_changed_at", sa.Date(), nullable=False),
+        sa.Column("last_sync_time", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("last_changed_at", sa.Date(), nullable=True),
         sa.Column(
             "sync_status",
             sa.Enum("NEVER", "PENDING", "SYNCED", name="syncstatus"),
