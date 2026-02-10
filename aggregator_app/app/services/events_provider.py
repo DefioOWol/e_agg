@@ -3,7 +3,9 @@
 from datetime import date
 from typing import Any
 
+import backoff
 from aiohttp import ClientSession, ClientTimeout
+from aiohttp.client_exceptions import ClientResponseError
 
 from app.config import settings
 
@@ -13,7 +15,7 @@ class EventsProviderClient:
 
     BASE_URL = "http://events-provider.dev-1.python-labs.ru"
 
-    def __init__(self, total_timeout: int = 10, connect_timeout: int = 5):
+    def __init__(self, total_timeout: int = 30, connect_timeout: int = 10):
         """Инициализировать клиент."""
         timeout = ClientTimeout(total=total_timeout, connect=connect_timeout)
         self._session = ClientSession(
@@ -23,6 +25,15 @@ class EventsProviderClient:
             raise_for_status=True,
         )
 
+    @backoff.on_exception(
+        backoff.expo,
+        (ClientTimeout, ClientResponseError),
+        max_tries=3,
+        giveup=lambda e: (
+            isinstance(e, ClientResponseError)
+            and e.status not in {429, 500, 502, 503, 504}
+        ),
+    )
     async def get_events(
         self, changed_at: date, cursor: str | None = None
     ) -> dict[str, Any]:
