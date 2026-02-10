@@ -1,7 +1,7 @@
 """Модуль взаимодействия с EventsProviderAPI."""
 
-from collections.abc import Any
 from datetime import date
+from typing import Any
 
 from aiohttp import ClientSession, ClientTimeout
 
@@ -33,9 +33,17 @@ class EventsProviderClient:
         async with self._session.get(url) as response:
             return await response.json()
 
-    def close(self):
+    async def close(self):
         """Закрыть сессию."""
-        self._session.close()
+        await self._session.close()
+
+    async def __aenter__(self):
+        """Вход в контекстный менеджер."""
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        """Выход из контекстного менеджера."""
+        await self.close()
 
     @staticmethod
     def extract_cursor(response: dict[str, Any]) -> str | None:
