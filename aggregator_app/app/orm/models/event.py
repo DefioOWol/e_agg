@@ -49,3 +49,7 @@ class Event(Base):
     status_changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
+
+    @property
+    def number_of_visitors(self) -> int:
+        return len(self.members)
