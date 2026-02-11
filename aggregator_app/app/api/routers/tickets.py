@@ -35,6 +35,12 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The registration time has expired",
         )
+    seats = await EventsService(session).get_seats(member.event_id)
+    if member.seat not in seats:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Seat is not available",
+        )
     ticket_id = await TicketsService(session).register(
         member.event_id, member.model_dump()
     )
