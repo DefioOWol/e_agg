@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import EventFilter, get_session
 from app.api.schemas.events import EventListOutPaginated, EventOutExtendedPlace
+from app.orm.models import EventStatus
 from app.services.events import EventsService
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -55,3 +56,23 @@ async def get_event(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
         )
     return event
+
+
+@router.get("/{event_id}/seats")
+async def get_event_seats(
+    event_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Получить свободные места на событии."""
+    event = await EventsService(session).get_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+    if event.status != EventStatus.PUBLISHED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Event is not published",
+        )
+    seats = await EventsService(session).get_seats(event_id)
+    return seats

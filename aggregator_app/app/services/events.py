@@ -1,13 +1,19 @@
 """Сервис событий."""
 
+from typing import Any
 from uuid import UUID
 
+from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import EventFilter
 from app.orm.models import Event
 from app.orm.repositories import EventRepository
+from app.services.events_provider import (
+    EventsProviderClient,
+    with_events_provider,
+)
 
 
 class EventsService:
@@ -38,3 +44,22 @@ class EventsService:
         """Получить событие по ID."""
         stmt = select(Event).where(Event.id == event_id)
         return await self._event_repo.get_select_scalar(stmt)
+
+    async def _fetch_seats(
+        self, client: EventsProviderClient, event_id: UUID
+    ) -> dict[str, Any]:
+        result = await client.get_seats(event_id)
+        return result | {"event_id": event_id}
+
+    async def _raise_server_error(self, _: Exception):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    async def get_seats(self, event_id: UUID) -> dict[str, Any]:
+        """Получить свободные места на событии."""
+        return await with_events_provider(
+            self._fetch_seats,
+            func_kwargs={"event_id": event_id},
+            on_error=self._raise_server_error,
+        )
