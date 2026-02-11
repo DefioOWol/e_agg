@@ -30,7 +30,7 @@ class Event(Base):
     place_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("places.id"), nullable=False
     )
-    place: Mapped["Place"] = relationship()
+    place: Mapped[Place] = relationship()
     event_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
@@ -49,6 +49,7 @@ class Event(Base):
     status_changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
+    members = relationship("Member", back_populates="event")
 
     @property
     def number_of_visitors(self) -> int:
