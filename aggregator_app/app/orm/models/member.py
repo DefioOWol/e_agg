@@ -6,7 +6,6 @@ from sqlalchemy import UUID, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.orm.models.base import Base
-from app.orm.models.event import Event
 
 
 class Member(Base):
@@ -24,4 +23,4 @@ class Member(Base):
     event_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("events.id"), nullable=False
     )
-    event: Mapped[Event] = relationship()
+    event = relationship("Event", back_populates="members")
