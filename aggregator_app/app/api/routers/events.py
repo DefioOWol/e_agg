@@ -30,9 +30,9 @@ async def get_events(
     previous_url = None
     if page_size:
         if page * page_size < count:
-            next_url = request.url.include_query_params(page=page + 1)
+            next_url = str(request.url.include_query_params(page=page + 1))
         if page > 1:
-            previous_url = request.url.include_query_params(page=page - 1)
+            previous_url = str(request.url.include_query_params(page=page - 1))
 
     return EventListOutPaginated(
         count=count,
