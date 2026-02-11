@@ -14,7 +14,7 @@ from app.orm.models import Event
 class EventFilter(Filter):
     """Фильтр событий."""
 
-    event_time__gte: date | None = Field(alias="date_from")
+    event_time__gte: date | None = Field(None, alias="date_from")
 
     class Constants(Filter.Constants):
         model = Event
