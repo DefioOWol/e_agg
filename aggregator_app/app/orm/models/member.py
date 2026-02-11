@@ -23,4 +23,4 @@ class Member(Base):
     event_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("events.id"), nullable=False
     )
-    event = relationship("Event", back_populates="members")
+    event = relationship("Event")
