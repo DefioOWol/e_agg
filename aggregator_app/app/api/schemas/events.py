@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 from app.api.schemas.places import PlaceOut
 from app.orm.models.event import EventStatus
@@ -25,6 +25,6 @@ class EventListOutPaginated(BaseModel):
     """Пагинированный список событий."""
 
     count: int
-    next: str | None
-    previous: str | None
+    next: HttpUrl | None
+    previous: HttpUrl | None
     results: list[EventOut]
