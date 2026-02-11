@@ -3,7 +3,6 @@
 import logging
 from datetime import UTC, date, datetime
 
-from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +18,7 @@ from app.services.events_provider import (
     EventsPaginator,
     EventsProviderClient,
     EventsProviderParser,
+    with_events_provider,
 )
 
 logging.basicConfig(level=logging.INFO, filename="app.log", filemode="w")
@@ -65,6 +65,12 @@ class SyncService:
         )
         logger.info("Задача синхронизации добавлена в планировщик")
 
+    def _get_next_run_time(self, last_sync_time: datetime | None) -> datetime:
+        """Получить следующее время запуска."""
+        if last_sync_time is None:
+            return datetime.now(UTC)
+        return last_sync_time + self.SYNC_JOB_TRIGGER.interval
+
     def trigger_job(self):
         """Вызвать задачу синхронизации."""
         logger.info("Запрошен внеплановый запуск задачи")
@@ -92,23 +98,26 @@ class SyncService:
             sync_meta.sync_status.value,
         )
 
-        try:
-            (
-                event_data_list,
-                place_data_list,
-                latest_changed_at,
-            ) = await self._run_fetch(sync_meta)
-        except (TimeoutError, ClientConnectionError, ClientResponseError) as e:
-            logger.exception("Ошибка при получении данных из API: %s", str(e))
-            await self._rollback_sync_meta(sync_status)
-        else:
-            await self._update_db(
-                event_data_list, place_data_list, latest_changed_at
-            )
-            logger.info("Синхронизация завершена")
+        await with_events_provider(
+            self._run_fetch,
+            func_kwargs={"sync_meta": sync_meta},
+            on_success=self._update_db,
+            on_error=self._rollback_sync_meta,
+            on_error_kwargs={"prev_sync_status": sync_status},
+        )
+
+    async def _get_sync_meta(self, session: AsyncSession) -> SyncMeta:
+        """Получить метаданные синхронизации."""
+        logger.info("Получаем метаданные")
+
+        sync_meta_repo = SyncMetaRepository(session)
+        sync_meta, _ = await sync_meta_repo.get_or_add(for_update=True)
+
+        logger.info("Метаданные получены: %s", str(sync_meta))
+        return sync_meta
 
     async def _run_fetch(
-        self, sync_meta: SyncMeta
+        self, client: EventsProviderClient, sync_meta: SyncMeta
     ) -> tuple[list[Event], list[Place], date]:
         """Загрузить данные из API."""
         latest_changed_at = sync_meta.last_changed_at or self.DEFAULT_CHANGED_AT
@@ -117,21 +126,19 @@ class SyncService:
             latest_changed_at.isoformat(),
         )
 
-        async with EventsProviderClient() as client:
-            event_data_dict = {}
-            place_data_dict = {}
+        event_data_dict = {}
+        place_data_dict = {}
+        parser = EventsProviderParser()
+        paginator = EventsPaginator(client, latest_changed_at)
 
-            parser = EventsProviderParser()
-            paginator = EventsPaginator(client, latest_changed_at)
-
-            async for event in paginator:
-                event_data, place_data = parser.parse_event_dict(event)
-                place_data_dict[place_data["id"]] = place_data
-                event_data_dict[event_data["id"]] = event_data
-                latest_changed_at = max(
-                    latest_changed_at,
-                    event_data["changed_at"].date(),
-                )
+        async for event in paginator:
+            event_data, place_data = parser.parse_event_dict(event)
+            place_data_dict[place_data["id"]] = place_data
+            event_data_dict[event_data["id"]] = event_data
+            latest_changed_at = max(
+                latest_changed_at,
+                event_data["changed_at"].date(),
+            )
 
         logger.info(
             "Получение завершено: events=%d, places=%d, latest_changed_at=%s",
@@ -145,16 +152,13 @@ class SyncService:
         return event_data_list, place_data_list, latest_changed_at
 
     async def _update_db(
-        self,
-        event_data_list: list[Event],
-        place_data_list: list[Place],
-        latest_changed_at: date,
+        self, fetch_result: tuple[list[Event], list[Place], date]
     ):
         """Обновить базу данных."""
         logger.info(
             "Обновление БД: events=%d, places=%d",
-            len(event_data_list),
-            len(place_data_list),
+            len(fetch_result[0]),
+            len(fetch_result[1]),
         )
 
         async with db_manager.session() as session:
@@ -162,19 +166,22 @@ class SyncService:
             place_repo = PlaceRepository(session)
 
             async with session.begin():
-                await place_repo.upsert(place_data_list)
-                await event_repo.upsert(event_data_list)
+                await place_repo.upsert(fetch_result[1])
+                await event_repo.upsert(fetch_result[0])
 
                 sync_meta = await self._get_sync_meta(session)
                 sync_meta.sync_status = SyncStatus.SYNCED
                 sync_meta.last_sync_time = datetime.now(UTC)
-                sync_meta.last_changed_at = latest_changed_at
+                sync_meta.last_changed_at = fetch_result[2]
 
             logger.info("Метаданные обновлены: %s", str(sync_meta))
-        logger.info("Обновление завершено")
+        logger.info("Синхронизация завершена")
 
-    async def _rollback_sync_meta(self, prev_sync_status: SyncStatus):
+    async def _rollback_sync_meta(
+        self, e: Exception, prev_sync_status: SyncStatus
+    ):
         """Обработать ошибку синхронизации."""
+        logger.exception("Ошибка при получении данных из API: %s", str(e))
         logger.info("Откатываем метаданные")
 
         async with db_manager.session() as session:
@@ -185,22 +192,6 @@ class SyncService:
         logger.info(
             "Статус синхронизации возвращен к '%s'", prev_sync_status.value
         )
-
-    async def _get_sync_meta(self, session: AsyncSession) -> SyncMeta:
-        """Получить метаданные синхронизации."""
-        logger.info("Получаем метаданные")
-
-        sync_meta_repo = SyncMetaRepository(session)
-        sync_meta, _ = await sync_meta_repo.get_or_add(for_update=True)
-
-        logger.info("Метаданные получены: %s", str(sync_meta))
-        return sync_meta
-
-    def _get_next_run_time(self, last_sync_time: datetime | None) -> datetime:
-        """Получить следующее время запуска."""
-        if last_sync_time is None:
-            return datetime.now(UTC)
-        return last_sync_time + self.SYNC_JOB_TRIGGER.interval
 
 
 scheduler = AsyncIOScheduler(timezone=UTC)
