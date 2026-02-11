@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
 
 from app.api.schemas.places import PlaceOut
 from app.orm.models.event import EventStatus
@@ -19,6 +19,8 @@ class EventOut(BaseModel):
     registration_deadline: datetime
     status: EventStatus
     number_of_visitors: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EventListOutPaginated(BaseModel):

@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class PlaceOut(BaseModel):
@@ -12,6 +12,8 @@ class PlaceOut(BaseModel):
     name: str
     city: str
     address: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlaceOutExtended(PlaceOut):
