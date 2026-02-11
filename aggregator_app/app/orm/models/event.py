@@ -5,12 +5,10 @@ from datetime import datetime
 from enum import Enum as PyEnum
 
 from sqlalchemy import UUID, DateTime, Enum, ForeignKey, String, func, select
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.orm.models.base import Base
 from app.orm.models.member import Member
-from app.orm.models.place import Place
 
 
 class EventStatus(PyEnum):
@@ -32,7 +30,7 @@ class Event(Base):
     place_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("places.id"), nullable=False
     )
-    place: Mapped[Place] = relationship(lazy="joined")
+    place = relationship("Place", lazy="joined")
     event_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
@@ -51,16 +49,9 @@ class Event(Base):
     status_changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    members = relationship("Member", back_populates="event")
-
-    @hybrid_property
-    def number_of_visitors(self):
-        return len(self.members)
-
-    @number_of_visitors.expression
-    def number_of_visitors(self):
-        return (
-            select(func.count(Member.ticker_id))
-            .where(Member.event_id == self.id)
-            .label("number_of_visitors")
-        )
+    number_of_visitors = column_property(
+        select(func.count(Member.ticker_id))
+        .where(Member.event_id == id)
+        .correlate_except(Member)
+        .scalar_subquery()
+    )
