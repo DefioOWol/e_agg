@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from cashews import cache
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,6 +45,7 @@ class EventsService:
         stmt = select(Event).where(Event.id == event_id)
         return await self._event_repo.get_select_scalar(stmt)
 
+    @cache(ttl="30s", key="event_seats:{event_id}")
     async def get_seats(self, event_id: UUID) -> list[str]:
         """Получить свободные места на событии."""
         return await with_events_provider(

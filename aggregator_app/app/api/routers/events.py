@@ -5,7 +5,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi_filter import FilterDepends
-from fastapi_simple_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import EventFilter, get_session
@@ -60,7 +59,6 @@ async def get_event(
 
 
 @router.get("/{event_id}/seats")
-@cache(expire=30)
 async def get_event_seats(
     request: Request,
     event_id: UUID,
