@@ -3,7 +3,7 @@
 import logging
 from datetime import UTC, date, datetime
 
-from aiohttp.client_exceptions import ClientResponseError
+from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -98,12 +98,8 @@ class SyncService:
                 place_data_list,
                 latest_changed_at,
             ) = await self._run_fetch(sync_meta)
-        except (TimeoutError, ClientResponseError) as e:
-            logger.exception(
-                "Ошибка при получении данных из API: [%d] %s",
-                e.status,
-                e.message,
-            )
+        except (TimeoutError, ClientConnectionError, ClientResponseError) as e:
+            logger.exception("Ошибка при получении данных из API: %s", str(e))
             await self._rollback_sync_meta(sync_status)
         else:
             await self._update_db(

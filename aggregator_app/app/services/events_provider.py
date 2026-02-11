@@ -5,7 +5,7 @@ from typing import Any
 
 import backoff
 from aiohttp import ClientSession, ClientTimeout
-from aiohttp.client_exceptions import ClientResponseError
+from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
 from sqlalchemy import DateTime
 
 from app.config import settings
@@ -29,7 +29,7 @@ class EventsProviderClient:
 
     @backoff.on_exception(
         backoff.expo,
-        (TimeoutError, ClientResponseError),
+        (TimeoutError, ClientConnectionError, ClientResponseError),
         max_tries=3,
     )
     async def get_events(
