@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi_simple_cache import FastAPISimpleCache
 from fastapi_simple_cache.backends.inmemory import InMemoryBackend
 
-from app.api.routers import events, healthcheck, sync
+from app.api.routers import events, healthcheck, sync, tickets
 from app.orm.db_manager import db_manager
 from app.services.sync import SyncService, scheduler
 
@@ -41,3 +41,4 @@ app = FastAPI(
 app.include_router(healthcheck.router)
 app.include_router(sync.router)
 app.include_router(events.router)
+app.include_router(tickets.router)
