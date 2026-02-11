@@ -12,6 +12,7 @@ class PlaceRepository(BaseRepository):
     """Репозиторий мест проведения событий."""
 
     async def upsert(self, json_data_list: list[dict[str, Any]]):
+        """Вставить или обновить записи при конфликте."""
         stmt = insert(Place).values(json_data_list)
         stmt = stmt.on_conflict_do_update(
             index_elements=[Place.id],
