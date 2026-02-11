@@ -1,7 +1,9 @@
 """Модуль взаимодействия с EventsProviderAPI."""
 
+from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime
 from typing import Any
+from uuid import UUID
 
 import backoff
 from aiohttp import ClientSession, ClientTimeout
@@ -17,6 +19,12 @@ class EventsProviderClient:
 
     BASE_URL = "http://events-provider.dev-1.python-labs.ru"
 
+    _BACKOFF_ON_EXCEPTION = backoff.on_exception(
+        backoff.expo,
+        (TimeoutError, ClientConnectionError, ClientResponseError),
+        max_tries=3,
+    )
+
     def __init__(self, total_timeout: int = 10, connect_timeout: int = 5):
         """Инициализировать клиент."""
         timeout = ClientTimeout(total=total_timeout, connect=connect_timeout)
@@ -27,11 +35,7 @@ class EventsProviderClient:
             raise_for_status=True,
         )
 
-    @backoff.on_exception(
-        backoff.expo,
-        (TimeoutError, ClientConnectionError, ClientResponseError),
-        max_tries=3,
-    )
+    @_BACKOFF_ON_EXCEPTION
     async def get_events(
         self, changed_at: date, cursor: str | None = None
     ) -> dict[str, Any]:
@@ -39,6 +43,13 @@ class EventsProviderClient:
         url = f"/api/events/?changed_at={changed_at.isoformat()}"
         if cursor:
             url += f"&cursor={cursor}"
+        async with self._session.get(url) as response:
+            return await response.json()
+
+    @_BACKOFF_ON_EXCEPTION
+    async def get_seats(self, event_id: UUID) -> dict[str, Any]:
+        """Получить свободные места на событии."""
+        url = f"/api/events/{event_id}/seats/"
         async with self._session.get(url) as response:
             return await response.json()
 
@@ -60,6 +71,28 @@ class EventsProviderClient:
         if (cursor := response.get("next")) is not None:
             cursor = cursor.rsplit("cursor=", 1)[1]
         return cursor
+
+
+async def with_events_provider(
+    func: Callable[..., Awaitable[Any]],
+    *,
+    func_kwargs: dict[str, Any] | None = None,
+    on_success: Callable[..., Awaitable[Any]] | None = None,
+    on_success_kwargs: dict[str, Any] | None = None,
+    on_error: Callable[..., Awaitable[Any]] | None = None,
+    on_error_kwargs: dict[str, Any] | None = None,
+) -> Any:
+    """Выполнить запрос к EventsProviderAPI с обработкой ошибок."""
+    try:
+        async with EventsProviderClient() as client:
+            result = await func(client, **(func_kwargs or {}))
+    except (TimeoutError, ClientConnectionError, ClientResponseError) as e:
+        if on_error is None:
+            raise
+        return await on_error(e, **(on_error_kwargs or {}))
+    if on_success is None:
+        return result
+    return await on_success(result, **(on_success_kwargs or {}))
 
 
 class EventsPaginator:
