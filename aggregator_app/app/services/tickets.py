@@ -1,3 +1,5 @@
+"""Сервис регистрации участников."""
+
 from typing import Any
 from uuid import UUID
 
@@ -26,7 +28,7 @@ class TicketsService:
         await with_events_provider(
             self._register_member,
             func_kwargs={"event_id": event_id, "member_data": member_data},
-            on_success=self._member_repo.create,
+            on_success=self._create_member,
             on_success_kwargs={
                 "event_id": event_id,
                 "member_data": member_data,

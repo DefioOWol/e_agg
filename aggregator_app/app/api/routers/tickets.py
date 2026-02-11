@@ -41,7 +41,8 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Seat is not available",
         )
+    member_data = member.model_dump()
     ticket_id = await TicketsService(session).register(
-        member.event_id, member.model_dump()
+        member_data.pop("event_id"), member_data
     )
     return {"ticket_id": ticket_id}
