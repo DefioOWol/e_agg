@@ -3,6 +3,8 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi_simple_cache import FastAPISimpleCache
+from fastapi_simple_cache.backends.inmemory import InMemoryBackend
 
 from app.api.routers import events, healthcheck, sync
 from app.orm.db_manager import db_manager
@@ -22,6 +24,7 @@ async def lifespan(app: FastAPI):
     await db_manager.init()
     await SyncService(scheduler).init_job()
     scheduler.start()
+    FastAPISimpleCache.init(InMemoryBackend())
     yield
     scheduler.shutdown()
     await db_manager.close()

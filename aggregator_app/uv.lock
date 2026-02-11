@@ -14,6 +14,7 @@ dependencies = [
     { name = "backoff" },
     { name = "fastapi" },
     { name = "fastapi-filter" },
+    { name = "fastapi-simple-cache" },
     { name = "pydantic-settings" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
@@ -36,6 +37,7 @@ requires-dist = [
     { name = "backoff", specifier = ">=2.2.1" },
     { name = "fastapi", specifier = ">=0.128.2" },
     { name = "fastapi-filter", specifier = ">=2.0.1" },
+    { name = "fastapi-simple-cache", specifier = ">=0.1.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "uvicorn", specifier = ">=0.40.0" },
@@ -328,6 +330,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/43/ed/c36cfcd849519fd2d23051ad81a91fc5e8cfa7109496fc8a10ad565a5fe9/fastapi_filter-2.0.1.tar.gz", hash = "sha256:cffda370097af7e404f1eb188aca58b199084bfaf7cec881e40b404adf12566e", size = 9857, upload-time = "2024-12-07T17:30:06.343Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5e/88/afc022ad64d12f730141fc50758ecf9d60de5fed11335dc16e3127617f05/fastapi_filter-2.0.1-py3-none-any.whl", hash = "sha256:711d48707ec62f7c9e12a7713fc0f6a99858a9e3741b4d108102d5599e77197d", size = 11586, upload-time = "2024-12-07T17:30:05.375Z" },
+]
+
+[[package]]
+name = "fastapi-simple-cache"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastapi" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ad/c1/adb5bc899cf3f3f62b6c85640a64c9531e2133a092b5140553f357cedf2b/fastapi-simple-cache-0.1.5.tar.gz", hash = "sha256:2b46a1cdf73192d42dd1646e9045ac226e3f13764e17b2417782b27194cb8dfc", size = 23394, upload-time = "2022-09-06T19:35:41.676Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/a6/7e370f19aba67065018068d7800751b9a62c2e996e0cd54c80d5c53b1f74/fastapi_simple_cache-0.1.5-py3-none-any.whl", hash = "sha256:f64f54b1b16c69d3400625fc3e103da29c0b78324c760cdb86a59ae8f74b4b1c", size = 20640, upload-time = "2022-09-06T19:35:39.529Z" },
 ]
 
 [[package]]
