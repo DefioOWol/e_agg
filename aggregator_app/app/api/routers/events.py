@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import EventFilter, get_session
 from app.api.schemas.events import EventListOutPaginated, EventOutExtendedPlace
 from app.orm.models import EventStatus
-from app.services.events import EventsService
+from app.services import EventsService
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -78,4 +78,4 @@ async def get_event_seats(
             detail="Event is not published",
         )
     seats = await EventsService(session).get_seats(event_id)
-    return seats
+    return {"event_id": event_id, "available_seats": seats}

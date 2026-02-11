@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, status
 
-from app.services.sync import SyncService, scheduler
+from app.services import SyncService, scheduler
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
