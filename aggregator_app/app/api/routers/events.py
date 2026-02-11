@@ -1,13 +1,14 @@
 """API событий."""
 
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi_filter import FilterDepends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import EventFilter, get_session
-from app.api.schemas.events import EventListOutPaginated
+from app.api.schemas.events import EventListOutPaginated, EventOutExtendedPlace
 from app.services.events import EventsService
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -40,3 +41,17 @@ async def get_events(
         previous=previous_url,
         results=events,
     )
+
+
+@router.get("/{event_id}", response_model=EventOutExtendedPlace)
+async def get_event(
+    event_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Получить событие по ID."""
+    event = await EventsService(session).get_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+    return event

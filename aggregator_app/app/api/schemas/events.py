@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, HttpUrl
 
-from app.api.schemas.places import PlaceOut
+from app.api.schemas.places import PlaceOut, PlaceOutExtended
 from app.orm.models.event import EventStatus
 
 
@@ -30,3 +30,9 @@ class EventListOutPaginated(BaseModel):
     next: HttpUrl | None
     previous: HttpUrl | None
     results: list[EventOut]
+
+
+class EventOutExtendedPlace(EventOut):
+    """Cхема возвращаемого события с расширенным местом проведения."""
+
+    place: PlaceOutExtended

@@ -1,5 +1,7 @@
 """Сервис событий."""
 
+from uuid import UUID
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,3 +33,8 @@ class EventsService:
         count = await self._event_repo.get_select_scalar(stmt)
 
         return events, count
+
+    async def get_by_id(self, event_id: UUID) -> Event | None:
+        """Получить событие по ID."""
+        stmt = select(Event).where(Event.id == event_id)
+        return await self._event_repo.get_select_scalar(stmt)

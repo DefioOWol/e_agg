@@ -24,7 +24,7 @@ class EventRepository(BaseRepository):
     async def get_select_scalar(self, stmt: Select) -> Any:
         """Получить скалярное значение по запросу."""
         result = await self._session.execute(stmt)
-        return result.scalar_one()
+        return result.scalar_one_or_none()
 
     async def upsert(self, json_data_list: list[dict[str, Any]]):
         """Вставить или обновить записи при конфликте."""
