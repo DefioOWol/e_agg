@@ -13,7 +13,7 @@ class Member(Base):
 
     __tablename__ = "members"
 
-    ticker_id: Mapped[uuid_pkg.UUID] = mapped_column(
+    ticket_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, nullable=False
     )
     first_name: Mapped[str] = mapped_column(String(32), nullable=False)

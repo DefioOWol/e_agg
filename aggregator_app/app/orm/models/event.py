@@ -50,7 +50,7 @@ class Event(Base):
         DateTime(timezone=True), nullable=False
     )
     number_of_visitors = column_property(
-        select(func.count(Member.ticker_id))
+        select(func.count(Member.ticket_id))
         .where(Member.event_id == id)
         .correlate_except(Member)
         .scalar_subquery()
