@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.routers import healthcheck, sync
+from app.api.routers import events, healthcheck, sync
 from app.orm.db_manager import db_manager
 from app.services.sync import SyncService, scheduler
 
@@ -37,3 +37,4 @@ app = FastAPI(
 
 app.include_router(healthcheck.router)
 app.include_router(sync.router)
+app.include_router(events.router)
