@@ -208,4 +208,3 @@ class SyncService:
 
 
 scheduler = AsyncIOScheduler(timezone=UTC)
-sync_service = SyncService(scheduler)

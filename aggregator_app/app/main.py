@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from app.api.routers import healthcheck, sync
 from app.orm.db_manager import db_manager
-from app.services.sync import scheduler, sync_service
+from app.services.sync import SyncService, scheduler
 
 
 @asynccontextmanager
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 
     """
     await db_manager.init()
-    await sync_service.init_job()
+    await SyncService(scheduler).init_job()
     scheduler.start()
     yield
     scheduler.shutdown()
