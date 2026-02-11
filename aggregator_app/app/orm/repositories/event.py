@@ -12,14 +12,14 @@ from app.orm.repositories.base import BaseRepository
 class EventRepository(BaseRepository):
     """Репозиторий событий."""
 
-    async def get_paginated_rows(
+    async def get_paginated(
         self, stmt: Select, page: int, page_size: int | None
-    ) -> list[tuple[Any, ...]]:
-        """Получить пагинированные строки по запросу."""
+    ) -> list[Event]:
+        """Получить пагинированные события по запросу."""
         if page_size:
             stmt = stmt.offset((page - 1) * page_size).limit(page_size)
         result = await self._session.execute(stmt)
-        return result.all()
+        return result.scalars().all()
 
     async def get_select_scalar(self, stmt: Select) -> Any:
         """Получить скалярное значение по запросу."""
