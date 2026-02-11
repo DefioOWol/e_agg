@@ -53,6 +53,15 @@ class EventsProviderClient:
         async with self._session.get(url) as response:
             return await response.json()
 
+    @_BACKOFF_ON_EXCEPTION
+    async def register_member(
+        self, event_id: UUID, member_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Зарегистрировать участника на событие."""
+        url = f"/api/events/{event_id}/register/"
+        async with self._session.post(url, json=member_data) as response:
+            return await response.json()
+
     async def close(self):
         """Закрыть сессию."""
         await self._session.close()
