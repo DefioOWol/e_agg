@@ -22,7 +22,7 @@ async def get_events(
     page_size: Annotated[int | None, Query(ge=1)] = None,
 ):
     """Получить пагинированный список событий."""
-    items, count = await EventsService(session).get_paginated(
+    events, count = await EventsService(session).get_paginated(
         filter_, page, page_size
     )
 
@@ -38,5 +38,5 @@ async def get_events(
         count=count,
         next=next_url,
         previous=previous_url,
-        results=items,
+        results=events,
     )

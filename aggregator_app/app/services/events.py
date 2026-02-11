@@ -20,7 +20,7 @@ class EventsService:
         """Получить погинированные события и общее количество."""
         stmt = select(Event)
         stmt = filter_.filter(stmt)
-        items = await self._event_repo.get_paginated(
+        events = await self._event_repo.get_paginated(
             stmt.order_by(Event.event_time, Event.id),
             page,
             page_size,
@@ -30,4 +30,4 @@ class EventsService:
         stmt = filter_.filter(stmt)
         count = await self._event_repo.get_select_scalar(stmt)
 
-        return items, count
+        return events, count
