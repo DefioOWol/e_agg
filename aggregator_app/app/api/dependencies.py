@@ -17,6 +17,7 @@ class EventFilter(Filter):
     event_time__gte: date | None = Field(None, alias="date_from")
 
     @field_validator("event_time__gte")
+    @classmethod
     def string_to_date(cls, v):
         if isinstance(v, str):
             return date.fromisoformat(v)
