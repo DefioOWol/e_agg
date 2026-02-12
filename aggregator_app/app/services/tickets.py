@@ -23,9 +23,13 @@ class TicketsService:
         self._session = session
         self._member_repo = MemberRepository(session)
 
-    async def get_by_id(self, ticket_id: UUID) -> Member | None:
+    async def get_by_id(
+        self, ticket_id: UUID, *, load_event: bool = False
+    ) -> Member | None:
         """Получить участника по ID."""
-        return await self._member_repo.get_by_id(ticket_id)
+        return await self._member_repo.get_by_id(
+            ticket_id, load_event=load_event
+        )
 
     async def register(
         self, event_id: UUID, member_data: dict[str, Any]

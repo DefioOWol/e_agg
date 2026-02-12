@@ -56,10 +56,15 @@ async def unregister(
 ):
     """Отменить регистрацию участника на событие."""
     ticket_service = TicketsService(session)
-    member = await ticket_service.get_by_id(ticket_id)
+    member = await ticket_service.get_by_id(ticket_id, load_event=True)
     if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Member not found"
+        )
+    if datetime.now(UTC) >= member.event.event_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The event has already passed",
         )
     await ticket_service.unregister(member.event_id, ticket_id)
     return {"success": True}
