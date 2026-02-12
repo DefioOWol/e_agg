@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +31,7 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Event is not published",
         )
-    if datetime.now(UTC) > event.registration_deadline:
+    if datetime.now(UTC) >= event.registration_deadline:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The registration time has expired",
@@ -46,3 +47,19 @@ async def register(
         member_data.pop("event_id"), member_data
     )
     return {"ticket_id": ticket_id}
+
+
+@router.delete("/{ticket_id}")
+async def unregister(
+    ticket_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """Отменить регистрацию участника на событие."""
+    ticket_service = TicketsService(session)
+    member = await ticket_service.get_by_id(ticket_id)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Member not found"
+        )
+    await ticket_service.unregister(member.event_id, ticket_id)
+    return {"success": True}

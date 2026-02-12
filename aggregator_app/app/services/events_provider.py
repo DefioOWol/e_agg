@@ -62,6 +62,17 @@ class EventsProviderClient:
         async with self._session.post(url, json=member_data) as response:
             return await response.json()
 
+    @_BACKOFF_ON_EXCEPTION
+    async def unregister_member(
+        self, event_id: UUID, ticket_id: str
+    ) -> dict[str, Any]:
+        """Отменить регистрацию участника на событие."""
+        url = f"/api/events/{event_id}/unregister/"
+        async with self._session.delete(
+            url, json={"ticket_id": ticket_id}
+        ) as response:
+            return await response.json()
+
     async def close(self):
         """Закрыть сессию."""
         await self._session.close()
