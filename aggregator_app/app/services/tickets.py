@@ -3,6 +3,7 @@
 from typing import Any
 from uuid import UUID
 
+from aiohttp import ClientResponseError
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,7 +34,7 @@ class TicketsService:
                 "event_id": event_id,
                 "member_data": member_data,
             },
-            on_error=self._raise_server_error,
+            on_error=self._raise_external_register_error,
         )
 
     async def _register_member(
@@ -55,6 +56,11 @@ class TicketsService:
         await self._session.commit()
         return ticket_id
 
-    async def _raise_server_error(self, _: Exception):
-        """Вызвать ошибку сервера."""
+    async def _raise_external_register_error(self, e: Exception):
+        """Вызвать ошибку на внешнюю регистрацию."""
+        if (
+            isinstance(e, ClientResponseError)
+            and e.status == status.HTTP_400_BAD_REQUEST
+        ):
+            raise HTTPException(status_code=e.status, detail=e.message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
