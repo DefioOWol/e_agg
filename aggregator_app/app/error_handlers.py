@@ -9,7 +9,12 @@ from fastapi.responses import JSONResponse
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ):
-    """Обработчик ошибок валидации."""
+    """Обработчик ошибок валидации.
+
+    Переопределяет основной обработчик для `RequestValidationError`,
+    заменяя возвращаемый статус на 400.
+
+    """
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),

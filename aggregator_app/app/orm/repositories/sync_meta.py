@@ -12,7 +12,16 @@ class SyncMetaRepository(BaseRepository):
     async def get_or_add(
         self, *, for_update: bool = False
     ) -> tuple[SyncMeta, bool]:
-        """Получить или добавить метаданные синхронизации."""
+        """Получить или добавить метаданные синхронизации.
+
+        Аргументы:
+        - `for_update`: bool - флаг блокировки чтения для обновления;
+            по умолчанию False.
+
+        Возвращает:
+        - tuple[SyncMeta, bool] - объект метаданных и статус создания записи.
+
+        """
         stmt = select(SyncMeta).where(SyncMeta.id == 1)
         if for_update:
             stmt = stmt.with_for_update()

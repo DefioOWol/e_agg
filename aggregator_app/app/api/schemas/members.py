@@ -6,7 +6,16 @@ from pydantic import BaseModel, EmailStr, Field
 
 
 class MemberIn(BaseModel):
-    """Схема регистрации участника."""
+    """Схема регистрации участника.
+
+    Атрибуты:
+    - `event_id` - UUID события для регистрации.
+    - `first_name` - Имя участника.
+    - `last_name` - Фамилия участника.
+    - `email` - Email участника.
+    - `seat` - Желаемое место.
+
+    """
 
     event_id: UUID
     first_name: str = Field(

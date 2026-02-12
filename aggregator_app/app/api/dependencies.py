@@ -12,7 +12,13 @@ from app.orm.models import Event
 
 
 class EventFilter(Filter):
-    """Фильтр событий."""
+    """Фильтр событий.
+
+    Атрибуты:
+    - `event_time__gte`: date | None - Дата начала события в ISO формате;
+        может быть пустым; синоним - date_from.
+
+    """
 
     event_time__gte: date | None = Field(None, alias="date_from")
 

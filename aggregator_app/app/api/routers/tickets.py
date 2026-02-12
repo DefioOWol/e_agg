@@ -15,12 +15,41 @@ from app.services import EventsService, TicketsService
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+EXTERNAL_API_ERROR_RESPONSE = {
+    status.HTTP_500_INTERNAL_SERVER_ERROR: {
+        "description": "Ошибка на внешнем API"
+    }
+}
+
+
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        **EXTERNAL_API_ERROR_RESPONSE,
+        status.HTTP_404_NOT_FOUND: {"description": "Событие не найдено"},
+        status.HTTP_400_BAD_REQUEST: {
+            "description": (
+                "Событие не опубликовано"
+                " / время регистрации истекло"
+                " / место недоступно"
+            )
+        },
+    },
+)
 async def register(
     member: MemberIn,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Зарегистрировать участника на событие."""
+    """Зарегистрировать участника на событие.
+
+    Параметры тела запроса:
+    - `member`: `MemberIn` - Регистрируемый участник.
+
+    Возвращает:
+    - {"ticket_id": UUID} - UUID билета участника.
+
+    """
     event = await EventsService(session).get_by_id(member.event_id)
     if not event:
         raise HTTPException(
@@ -49,12 +78,29 @@ async def register(
     return {"ticket_id": ticket_id}
 
 
-@router.delete("/{ticket_id}")
+@router.delete(
+    "/{ticket_id}",
+    responses={
+        **EXTERNAL_API_ERROR_RESPONSE,
+        status.HTTP_404_NOT_FOUND: {"description": "Участник не найден"},
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Событие уже прошло или не существует"
+        },
+    },
+)
 async def unregister(
     ticket_id: UUID,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Отменить регистрацию участника на событие."""
+    """Отменить регистрацию участника на событие.
+
+    Параметры пути:
+    - `ticket_id`: UUID - ID билета участника.
+
+    Возвращает:
+    - {"success": bool} - Успешная отмена регистрации.
+
+    """
     ticket_service = TicketsService(session)
     member = await ticket_service.get_by_id(ticket_id, load_event=True)
     if not member:

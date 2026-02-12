@@ -26,7 +26,13 @@ class TicketsService:
     async def get_by_id(
         self, ticket_id: UUID, *, load_event: bool = False
     ) -> Member | None:
-        """Получить участника по ID."""
+        """Получить участника по ID билета.
+
+        Аргументы:
+        - `ticket_id` - UUID билета участника.
+        - `load_event` - Флаг подгрузки связанного события; по умолчанию False.
+
+        """
         return await self._member_repo.get_by_id(
             ticket_id, load_event=load_event
         )
@@ -34,7 +40,16 @@ class TicketsService:
     async def register(
         self, event_id: UUID, member_data: dict[str, Any]
     ) -> str:
-        """Зарегистрировать участника на событие."""
+        """Зарегистрировать участника на событие.
+
+        Аргументы:
+        - `event_id` - UUID события.
+        - `member_data` - Данные участника, готовые к JSON-сериализации.
+
+        Возвращает:
+        - UUID билета участника.
+
+        """
         return await with_events_provider(
             self._register_member,
             func_kwargs={"event_id": event_id, "member_data": member_data},
@@ -59,7 +74,7 @@ class TicketsService:
     async def _create_member(
         self, ticket_id: str, event_id: UUID, member_data: dict[str, Any]
     ) -> str:
-        """Создать участника."""
+        """Создать участника в локальной базе данных."""
         member_data.update({"event_id": event_id, "ticket_id": ticket_id})
         await self._member_repo.create(member_data)
         await self._session.commit()
@@ -87,7 +102,12 @@ class TicketsService:
         await self._session.commit()
 
     async def _raise_external_error(self, e: Exception):
-        """Вызвать ошибку на внешнюю регистрацию."""
+        """Вызвать ошибку на внешнюю регистрацию.
+
+        При ошибке типа `ClientResponseError` с кодом 400
+        будет выброшена ошибка HTTP 400, в остальных случаях - HTTP 500.
+
+        """
         if (
             isinstance(e, ClientResponseError)
             and e.status == status.HTTP_400_BAD_REQUEST

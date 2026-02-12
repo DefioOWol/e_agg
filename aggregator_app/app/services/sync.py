@@ -38,7 +38,15 @@ class SyncService:
         self._scheduler = scheduler
 
     async def init_job(self):
-        """Инициализировать задачу синхронизации."""
+        """Инициализировать задачу синхронизации.
+
+        В начале работы проверяется статус синхронизации и если он равен
+        `PENDING`, то исправляется на другой. Это сделано из расчета
+        одной реплики сервиса и того, что она может упасть в любой момент.
+
+        Затем задача добавляется в планировщик на основе метаданных.
+
+        """
         logger.info("Инициализация задачи")
 
         async with db_manager.session() as session:
@@ -66,13 +74,20 @@ class SyncService:
         logger.info("Задача синхронизации добавлена в планировщик")
 
     def _get_next_run_time(self, last_sync_time: datetime | None) -> datetime:
-        """Получить следующее время запуска."""
+        """Получить следующее время запуска по предыдущему."""
         if last_sync_time is None:
             return datetime.now(UTC)
         return last_sync_time + self.SYNC_JOB_TRIGGER.interval
 
     def trigger_job(self):
-        """Вызвать задачу синхронизации."""
+        """Задать внеплановый запуск задачи синхронизации.
+
+        Не вызывает синхронизацию напрямую, но говорит планировщику
+        начать ее как можно раньше. Если синхронизация уже идет, то
+        данный вызов не повлияет на нее, однако произойдет повторный
+        запуск после завершения первой.
+
+        """
         logger.info("Запрошен внеплановый запуск задачи")
         self._scheduler.modify_job(
             self.SYNC_JOB_ID,
@@ -80,7 +95,17 @@ class SyncService:
         )
 
     async def _sync(self):
-        """Синхронизировать данные."""
+        """Основная функция синхронизации.
+
+        В начале устанавливается статус `PENDING` в одной сессии.
+        Если статус уже в этом состоянии, то функция не выполняется.
+        Это необходимо, если было бы несколько реплик.
+
+        Затем вызывается получение данных из внешнего API.
+        При успехе в новой сессии одной транзакцией данные
+        добавляются/обновляются, при ошибке - откатываются метаданные.
+
+        """
         logger.info("Начало синхронизации")
 
         async with db_manager.session() as session:
@@ -107,7 +132,7 @@ class SyncService:
         )
 
     async def _get_sync_meta(self, session: AsyncSession) -> SyncMeta:
-        """Получить метаданные синхронизации."""
+        """Получить метаданные синхронизации с блокировкой обновления."""
         logger.info("Получаем метаданные")
 
         sync_meta_repo = SyncMetaRepository(session)
@@ -119,7 +144,14 @@ class SyncService:
     async def _run_fetch(
         self, client: EventsProviderClient, sync_meta: SyncMeta
     ) -> tuple[list[Event], list[Place], date]:
-        """Загрузить данные из API."""
+        """Загрузить данные из API.
+
+        Данные собираются в словари, так как одно и то же место проведения
+        может присутствовать в разных событиях, а дубликаты не допускаются
+        для on_conflict_do_update. Сбор происходит целиком, так как
+        данных получаем сравнительно мало.
+
+        """
         latest_changed_at = sync_meta.last_changed_at or self.DEFAULT_CHANGED_AT
         logger.info(
             "Получение данных из API, начиная с %s",
@@ -154,7 +186,14 @@ class SyncService:
     async def _update_db(
         self, fetch_result: tuple[list[Event], list[Place], date]
     ):
-        """Обновить базу данных."""
+        """Обновить базу данных и метаданные.
+
+        Для обновления создается новая сессия, так как держать одну
+        сессию открытой на все время синхронизации не практично.
+        Затем через upsert вставляются/обновляются данные о местах
+        проведения и событиях.
+
+        """
         logger.info(
             "Обновление БД: events=%d, places=%d",
             len(fetch_result[0]),
@@ -180,7 +219,7 @@ class SyncService:
     async def _rollback_sync_meta(
         self, e: Exception, prev_sync_status: SyncStatus
     ):
-        """Обработать ошибку синхронизации."""
+        """Откатить метаданные."""
         logger.exception("Ошибка при получении данных из API: %s", str(e))
         logger.info("Откатываем метаданные")
 

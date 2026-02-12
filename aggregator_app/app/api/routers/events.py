@@ -23,7 +23,17 @@ async def get_events(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int | None, Query(ge=1)] = None,
 ):
-    """Получить пагинированный список событий."""
+    """Получить пагинированный список событий.
+
+    Параметры запроса:
+    - Параметры фильтрации из `EventFilter`.
+    - `page` - Номер страницы; по умолчанию 1.
+    - `page_size` - Размер страницы; по умолчанию None.
+
+    Возвращает:
+    - `EventListOutPaginated` - Пагинированный список событий.
+
+    """
     events, count = await EventsService(session).get_paginated(
         filter_, page, page_size
     )
@@ -44,12 +54,26 @@ async def get_events(
     )
 
 
-@router.get("/{event_id}", response_model=EventOutExtendedPlace)
+@router.get(
+    "/{event_id}",
+    response_model=EventOutExtendedPlace,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"description": "Событие не найдено"},
+    },
+)
 async def get_event(
     event_id: UUID,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Получить событие по ID."""
+    """Получить событие по ID.
+
+    Параметры пути:
+    - `event_id` - UUID события.
+
+    Возвращает:
+    - `EventOutExtendedPlace` - Событие с расширенным местом проведения.
+
+    """
     event = await EventsService(session).get_by_id(event_id)
     if not event:
         raise HTTPException(
@@ -58,13 +82,30 @@ async def get_event(
     return event
 
 
-@router.get("/{event_id}/seats")
+@router.get(
+    "/{event_id}/seats",
+    responses={
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "description": "Ошибка на внешнем API"
+        },
+        status.HTTP_404_NOT_FOUND: {"description": "Событие не найдено"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Событие не опубликовано"},
+    },
+)
 async def get_event_seats(
     request: Request,
     event_id: UUID,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    """Получить свободные места на событии."""
+    """Получить свободные места на событии.
+
+    Параметры пути:
+    - `event_id` - UUID события.
+
+    Возвращает:
+    - {"event_id": UUID, "available_seats": list[str]} - Свободные места.
+
+    """
     event = await EventsService(session).get_by_id(event_id)
     if not event:
         raise HTTPException(

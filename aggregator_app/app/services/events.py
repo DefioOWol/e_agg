@@ -20,12 +20,23 @@ class EventsService:
     """Сервис событий."""
 
     def __init__(self, session: AsyncSession):
+        """Инициализировать сервис событий."""
         self._event_repo = EventRepository(session)
 
     async def get_paginated(
         self, filter_: EventFilter, page: int, page_size: int | None
     ) -> tuple[list[Event], int]:
-        """Получить погинированные события и общее количество."""
+        """Получить погинированные события и общее количество.
+
+        Аргументы:
+        - `filter_`: `EventFilter` - Фильтр событий.
+        - `page` - Номер страницы.
+        - `page_size` - Размер страницы.
+
+        Возвращает:
+        - Пагинированный список событий и общее количество событий.
+
+        """
         stmt = select(Event)
         stmt = filter_.filter(stmt)
         events = await self._event_repo.get_paginated(
@@ -47,7 +58,11 @@ class EventsService:
 
     @cache(ttl="30s", key="event_seats:{event_id}")
     async def get_seats(self, event_id: UUID) -> list[str]:
-        """Получить свободные места на событии."""
+        """Получить свободные места на событии.
+
+        Ответ кешируется на 30 секунд по ключу `event_seats:{event_id}`.
+
+        """
         return await with_events_provider(
             self._fetch_seats,
             func_kwargs={"event_id": event_id},

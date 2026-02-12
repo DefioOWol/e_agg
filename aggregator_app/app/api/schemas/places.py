@@ -6,7 +6,15 @@ from pydantic import BaseModel, ConfigDict
 
 
 class PlaceOut(BaseModel):
-    """Базовая схема возвращаемого места проведения."""
+    """Базовая схема возвращаемого места проведения.
+
+    Атрибуты:
+    - `id` - UUID места проведения.
+    - `name` - Название места проведения.
+    - `city` - Город места проведения.
+    - `address` - Адрес места проведения.
+
+    """
 
     id: UUID
     name: str
@@ -17,6 +25,13 @@ class PlaceOut(BaseModel):
 
 
 class PlaceOutExtended(PlaceOut):
-    """Расширенная схема возвращаемого места проведения."""
+    """Расширенная схема возвращаемого места проведения.
+
+    Наследуется от `PlaceOut`.
+
+    Атрибуты:
+    - `seats_pattern` - Формат посадочных мест.
+
+    """
 
     seats_pattern: str

@@ -15,7 +15,12 @@ from app.orm.models import Base, Event, EventStatus, Place
 
 
 class EventsProviderClient:
-    """Клиент для взаимодействия с EventsProviderAPI."""
+    """Клиент для взаимодействия с EventsProviderAPI.
+
+    По завершении работы необходимо вызвать метод `close()`.
+    Явялется асинхронным контекстным менеджером.
+
+    """
 
     BASE_URL = "http://events-provider.dev-1.python-labs.ru"
 
@@ -26,7 +31,15 @@ class EventsProviderClient:
     )
 
     def __init__(self, total_timeout: int = 10, connect_timeout: int = 5):
-        """Инициализировать клиент."""
+        """Инициализировать клиент.
+
+        Аргументы:
+        - `total_timeout` - Максимальное время ожидания всего запроса;
+            по умолчанию 10 секунд.
+        - `connect_timeout` - Максимальное время ожидания соединения;
+            по умолчанию 5 секунд.
+
+        """
         timeout = ClientTimeout(total=total_timeout, connect=connect_timeout)
         self._session = ClientSession(
             self.BASE_URL,
@@ -39,7 +52,13 @@ class EventsProviderClient:
     async def get_events(
         self, changed_at: date, cursor: str | None = None
     ) -> dict[str, Any]:
-        """Получить события."""
+        """Получить события.
+
+        Аргументы:
+        - `changed_at` - Дата последнего изменения в ISO формате.
+        - `cursor` - Курсор пагинации; по умолчанию None.
+
+        """
         url = f"/api/events/?changed_at={changed_at.isoformat()}"
         if cursor:
             url += f"&cursor={cursor}"
@@ -57,7 +76,13 @@ class EventsProviderClient:
     async def register_member(
         self, event_id: UUID, member_data: dict[str, Any]
     ) -> dict[str, Any]:
-        """Зарегистрировать участника на событие."""
+        """Зарегистрировать участника на событие.
+
+        Аргументы:
+        - `event_id` - UUID события.
+        - `member_data` - Данные участника.
+
+        """
         url = f"/api/events/{event_id}/register/"
         async with self._session.post(url, json=member_data) as response:
             return await response.json()
@@ -102,7 +127,26 @@ async def with_events_provider(
     on_error: Callable[..., Awaitable[Any]] | None = None,
     on_error_kwargs: dict[str, Any] | None = None,
 ) -> Any:
-    """Выполнить запрос к EventsProviderAPI с обработкой ошибок."""
+    """Выполнить запрос к EventsProviderAPI с обработкой ошибок.
+
+    Аргументы:
+    - `func` - Функция для выполнения запроса;
+        первый аргумент - `EventsProviderClient`.
+    - `func_kwargs` - Параметры для функции `func`; по умолчанию None.
+    - `on_success` - Функция для обработки успешного запроса;
+        первый аргумент - результат выполнения `func`; по умолчанию None.
+    - `on_success_kwargs` - Параметры для функции `on_success`;
+        по умолчанию None.
+    - `on_error` - Функция для обработки ошибки;
+        первый аргумент - ошибка; по умолчанию None.
+    - `on_error_kwargs` - Параметры для функции `on_error`;
+        по умолчанию None.
+
+    Возвращает:
+    - Результат выполнения функции `on_success` или `func`
+        если первая не задана.
+
+    """
     try:
         async with EventsProviderClient() as client:
             result = await func(client, **(func_kwargs or {}))
@@ -119,7 +163,13 @@ class EventsPaginator:
     """Пагинатор событий EventsProviderAPI."""
 
     def __init__(self, client: EventsProviderClient, changed_at: date):
-        """Инициализировать пагинатор."""
+        """Инициализировать пагинатор.
+
+        Аргументы:
+        - `client`: `EventsProviderClient` - Клиент для взаимодействия.
+        - `changed_at` - Дата последнего изменения в ISO формате.
+
+        """
         self._client = client
         self._changed_at = changed_at
         self._cursor = None
@@ -153,7 +203,15 @@ class EventsProviderParser:
     def parse_event_dict(
         self, data: dict[str, Any]
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Разобрать событие и вернуть словари с данными."""
+        """Разобрать событие и вернуть словари с преобразованными данными.
+
+        Аргументы:
+        - `data` - Словарь с данными события и места проведения.
+
+        Возвращает:
+        - Словарь с данными события и словарь с данными места проведения.
+
+        """
         place_data = data.pop("place")
         self._prepare_place(place_data)
         self._prepare_event(data)
@@ -170,7 +228,7 @@ class EventsProviderParser:
         self._convert_datetime(place_data, Place)
 
     def _convert_datetime(self, data: dict[str, Any], cls_: type[Base]):
-        """Конвертировать даты."""
+        """Конвертировать даты в UTC."""
         for c in cls_.__table__.c:
             if isinstance(c.type, DateTime) and c.key in data:
                 data[c.key] = datetime.fromisoformat(data[c.key]).astimezone(

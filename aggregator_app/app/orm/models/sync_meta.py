@@ -18,7 +18,20 @@ class SyncStatus(PyEnum):
 
 
 class SyncMeta(Base):
-    """Модель метаданных синхронизации."""
+    """Модель метаданных синхронизации.
+
+    Таблица: sync_meta.
+
+    Атрибуты:
+    - `id` - Идентификатор; первичный ключ; может быть только = 1.
+    - `last_sync_time`: datetime | None - Время последней синхронизации;
+        может быть пустым.
+    - `last_changed_at`: date | None - Последняя запрашиваемая дата
+        изменения данных; может быть пустым.
+    - `sync_status`: `SyncStatus` - Последний статус синхронизации;
+        по умолчанию 'never'; не может быть пустым.
+
+    """
 
     __tablename__ = "sync_meta"
     __table_args__ = (CheckConstraint("id = 1", name="ck_sync_meta_singleton"),)

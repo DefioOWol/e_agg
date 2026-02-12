@@ -7,7 +7,11 @@ from app.services import SyncService, scheduler
 router = APIRouter(prefix="/sync", tags=["sync"])
 
 
-@router.post("/trigger", status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/trigger",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Вызвать синхронизацию",
+)
 async def trigger():
-    """Проверить работоспособность API."""
+    """Вызвать внеплановую синхронизацию данных."""
     SyncService(scheduler).trigger_job()
