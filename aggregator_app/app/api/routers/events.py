@@ -5,9 +5,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi_filter import FilterDepends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import EventFilter, get_session
+from app.api.dependencies import EventFilter, get_events_service
 from app.api.schemas.events import EventListOutPaginated, EventOutExtendedPlace
 from app.orm.models import EventStatus
 from app.services import EventsService
@@ -18,7 +17,7 @@ router = APIRouter(prefix="/events", tags=["events"])
 @router.get("", response_model=EventListOutPaginated)
 async def get_events(
     request: Request,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    events_service: Annotated[EventsService, Depends(get_events_service)],
     filter_: Annotated[EventFilter, FilterDepends(EventFilter)],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int | None, Query(ge=1)] = None,
@@ -34,9 +33,7 @@ async def get_events(
     - `EventListOutPaginated` - Пагинированный список событий.
 
     """
-    events, count = await EventsService(session).get_paginated(
-        filter_, page, page_size
-    )
+    events, count = await events_service.get_paginated(filter_, page, page_size)
 
     next_url = None
     previous_url = None
@@ -63,7 +60,7 @@ async def get_events(
 )
 async def get_event(
     event_id: UUID,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    events_service: Annotated[EventsService, Depends(get_events_service)],
 ):
     """Получить событие по ID.
 
@@ -74,7 +71,7 @@ async def get_event(
     - `EventOutExtendedPlace` - Событие с расширенным местом проведения.
 
     """
-    event = await EventsService(session).get_by_id(event_id)
+    event = await events_service.get_by_id(event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
@@ -95,7 +92,7 @@ async def get_event(
 async def get_event_seats(
     request: Request,
     event_id: UUID,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    events_service: Annotated[EventsService, Depends(get_events_service)],
 ):
     """Получить свободные места на событии.
 
@@ -106,7 +103,7 @@ async def get_event_seats(
     - {"event_id": UUID, "available_seats": list[str]} - Свободные места.
 
     """
-    event = await EventsService(session).get_by_id(event_id)
+    event = await events_service.get_by_id(event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
@@ -116,5 +113,5 @@ async def get_event_seats(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Event is not published",
         )
-    seats = await EventsService(session).get_seats(event_id)
+    seats = await events_service.get_seats(event_id)
     return {"event_id": event_id, "available_seats": seats}

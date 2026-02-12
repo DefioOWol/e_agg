@@ -19,8 +19,9 @@ from app.services.events_provider import (
 class EventsService:
     """Сервис событий."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, client: EventsProviderClient):
         """Инициализировать сервис событий."""
+        self._client = client
         self._event_repo = EventRepository(session)
 
     async def get_paginated(
@@ -64,6 +65,7 @@ class EventsService:
 
         """
         return await with_events_provider(
+            self._client,
             self._fetch_seats,
             func_kwargs={"event_id": event_id},
             on_error=self._raise_server_error,

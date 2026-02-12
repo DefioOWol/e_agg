@@ -18,9 +18,10 @@ from app.services.events_provider import (
 class TicketsService:
     """Сервис регистрации участников."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, client: EventsProviderClient):
         """Инициализировать сервис регистрации участников."""
         self._session = session
+        self._client = client
         self._member_repo = MemberRepository(session)
 
     async def get_by_id(
@@ -51,6 +52,7 @@ class TicketsService:
 
         """
         return await with_events_provider(
+            self._client,
             self._register_member,
             func_kwargs={"event_id": event_id, "member_data": member_data},
             on_success=self._create_member,
@@ -83,6 +85,7 @@ class TicketsService:
     async def unregister(self, event_id: UUID, ticket_id: UUID):
         """Отменить регистрацию участника на событие."""
         await with_events_provider(
+            self._client,
             self._unregister_member,
             func_kwargs={"event_id": event_id, "ticket_id": ticket_id},
             on_success=self._delete_member,

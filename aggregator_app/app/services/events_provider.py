@@ -17,7 +17,6 @@ from app.orm.models import Base, Event, EventStatus, Place
 class EventsProviderClient:
     """Клиент для взаимодействия с EventsProviderAPI.
 
-    По завершении работы необходимо вызвать метод `close()`.
     Явялется асинхронным контекстным менеджером.
 
     """
@@ -40,13 +39,10 @@ class EventsProviderClient:
             по умолчанию 5 секунд.
 
         """
-        timeout = ClientTimeout(total=total_timeout, connect=connect_timeout)
-        self._session = ClientSession(
-            self.BASE_URL,
-            headers={"x-api-key": settings.lms_api_key.get_secret_value()},
-            timeout=timeout,
-            raise_for_status=True,
+        self._timeout = ClientTimeout(
+            total=total_timeout, connect=connect_timeout
         )
+        self._session: ClientSession | None = None
 
     @_BACKOFF_ON_EXCEPTION
     async def get_events(
@@ -98,17 +94,20 @@ class EventsProviderClient:
         ) as response:
             return await response.json()
 
-    async def close(self):
-        """Закрыть сессию."""
-        await self._session.close()
-
     async def __aenter__(self):
         """Вход в контекстный менеджер."""
+        self._session = ClientSession(
+            self.BASE_URL,
+            headers={"x-api-key": settings.lms_api_key.get_secret_value()},
+            timeout=self._timeout,
+            raise_for_status=True,
+        )
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
         """Выход из контекстного менеджера."""
-        await self.close()
+        await self._session.close()
+        self._session = None
 
     @staticmethod
     def extract_cursor(response: dict[str, Any]) -> str | None:
@@ -119,6 +118,7 @@ class EventsProviderClient:
 
 
 async def with_events_provider(
+    client: EventsProviderClient,
     func: Callable[..., Awaitable[Any]],
     *,
     func_kwargs: dict[str, Any] | None = None,
@@ -127,9 +127,10 @@ async def with_events_provider(
     on_error: Callable[..., Awaitable[Any]] | None = None,
     on_error_kwargs: dict[str, Any] | None = None,
 ) -> Any:
-    """Выполнить запрос к EventsProviderAPI с обработкой ошибок.
+    """Выполнить запрос с инициализацией сессии и обработкой ошибок.
 
     Аргументы:
+    - `client` - Экземпляр клиента для взаимодействия.
     - `func` - Функция для выполнения запроса;
         первый аргумент - `EventsProviderClient`.
     - `func_kwargs` - Параметры для функции `func`; по умолчанию None.
@@ -148,7 +149,7 @@ async def with_events_provider(
 
     """
     try:
-        async with EventsProviderClient() as client:
+        async with client:
             result = await func(client, **(func_kwargs or {}))
     except (TimeoutError, ClientConnectionError, ClientResponseError) as e:
         if on_error is None:
@@ -160,10 +161,16 @@ async def with_events_provider(
 
 
 class EventsPaginator:
-    """Пагинатор событий EventsProviderAPI."""
+    """Пагинатор событий EventsProviderAPI.
 
-    def __init__(self, client: EventsProviderClient, changed_at: date):
-        """Инициализировать пагинатор.
+    Для использования необходимо вызвать метод `__call__`.
+
+    """
+
+    def __call__(
+        self, client: EventsProviderClient, changed_at: date
+    ) -> "EventsPaginator":
+        """Установить параметры пагинатора.
 
         Аргументы:
         - `client`: `EventsProviderClient` - Клиент для взаимодействия.
@@ -175,6 +182,8 @@ class EventsPaginator:
         self._cursor = None
         self._events = []
         self._current = 0
+
+        return self
 
     def __aiter__(self):
         """Получить итератор событий."""

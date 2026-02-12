@@ -7,7 +7,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.orm.db_manager import db_manager
+from app.orm.db_manager import DBManager, db_manager
 from app.orm.models import Event, Place, SyncMeta, SyncStatus
 from app.orm.repositories import (
     EventRepository,
@@ -33,9 +33,20 @@ class SyncService:
     SYNC_JOB_ID = "sync-events"
     SYNC_JOB_TRIGGER = IntervalTrigger(days=1)
 
-    def __init__(self, scheduler: AsyncIOScheduler):
+    def __init__(
+        self,
+        db_manager: DBManager,
+        scheduler: AsyncIOScheduler,
+        client: EventsProviderClient,
+        paginator: EventsPaginator,
+        parser: EventsProviderParser,
+    ):
         """Инициализировать сервис синхронизации."""
+        self._db_manager = db_manager
         self._scheduler = scheduler
+        self._client = client
+        self._paginator = paginator
+        self._parser = parser
 
     async def init_job(self):
         """Инициализировать задачу синхронизации.
@@ -49,7 +60,7 @@ class SyncService:
         """
         logger.info("Инициализация задачи")
 
-        async with db_manager.session() as session:
+        async with self._db_manager.session() as session:
             sync_meta = await self._get_sync_meta(session)
 
             if sync_meta.sync_status == SyncStatus.PENDING:
@@ -65,7 +76,7 @@ class SyncService:
             await session.commit()
 
         self._scheduler.add_job(
-            self._sync,
+            self.sync,
             trigger=self.SYNC_JOB_TRIGGER,
             id=self.SYNC_JOB_ID,
             max_instances=1,
@@ -94,7 +105,7 @@ class SyncService:
             next_run_time=datetime.now(UTC),
         )
 
-    async def _sync(self):
+    async def sync(self):
         """Основная функция синхронизации.
 
         В начале устанавливается статус `PENDING` в одной сессии.
@@ -108,7 +119,7 @@ class SyncService:
         """
         logger.info("Начало синхронизации")
 
-        async with db_manager.session() as session:
+        async with self._db_manager.session() as session:
             sync_meta = await self._get_sync_meta(session)
 
             if (sync_status := sync_meta.sync_status) == SyncStatus.PENDING:
@@ -124,6 +135,7 @@ class SyncService:
         )
 
         await with_events_provider(
+            self._client,
             self._run_fetch,
             func_kwargs={"sync_meta": sync_meta},
             on_success=self._update_db,
@@ -160,11 +172,9 @@ class SyncService:
 
         event_data_dict = {}
         place_data_dict = {}
-        parser = EventsProviderParser()
-        paginator = EventsPaginator(client, latest_changed_at)
 
-        async for event in paginator:
-            event_data, place_data = parser.parse_event_dict(event)
+        async for event in self._paginator(client, latest_changed_at):
+            event_data, place_data = self._parser.parse_event_dict(event)
             place_data_dict[place_data["id"]] = place_data
             event_data_dict[event_data["id"]] = event_data
             latest_changed_at = max(
@@ -200,7 +210,7 @@ class SyncService:
             len(fetch_result[1]),
         )
 
-        async with db_manager.session() as session:
+        async with self._db_manager.session() as session:
             event_repo = EventRepository(session)
             place_repo = PlaceRepository(session)
 
@@ -223,7 +233,7 @@ class SyncService:
         logger.exception("Ошибка при получении данных из API: %s", str(e))
         logger.info("Откатываем метаданные")
 
-        async with db_manager.session() as session:
+        async with self._db_manager.session() as session:
             sync_meta = await self._get_sync_meta(session)
             sync_meta.sync_status = prev_sync_status
             await session.commit()
@@ -234,3 +244,10 @@ class SyncService:
 
 
 scheduler = AsyncIOScheduler(timezone=UTC)
+sync_service = SyncService(
+    db_manager,
+    scheduler,
+    EventsProviderClient(),
+    EventsPaginator(),
+    EventsProviderParser(),
+)

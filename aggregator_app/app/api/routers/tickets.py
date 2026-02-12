@@ -5,9 +5,8 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_session
+from app.api.dependencies import get_events_service, get_tickets_service
 from app.api.schemas.members import MemberIn
 from app.orm.models import EventStatus
 from app.services import EventsService, TicketsService
@@ -39,7 +38,8 @@ EXTERNAL_API_ERROR_RESPONSE = {
 )
 async def register(
     member: MemberIn,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    events_service: Annotated[EventsService, Depends(get_events_service)],
+    tickets_service: Annotated[TicketsService, Depends(get_tickets_service)],
 ):
     """Зарегистрировать участника на событие.
 
@@ -50,7 +50,7 @@ async def register(
     - {"ticket_id": UUID} - UUID билета участника.
 
     """
-    event = await EventsService(session).get_by_id(member.event_id)
+    event = await events_service.get_by_id(member.event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
@@ -65,14 +65,14 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The registration time has expired",
         )
-    seats = await EventsService(session).get_seats(member.event_id)
+    seats = await events_service.get_seats(member.event_id)
     if member.seat not in seats:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Seat is not available",
         )
     member_data = member.model_dump()
-    ticket_id = await TicketsService(session).register(
+    ticket_id = await tickets_service.register(
         member_data.pop("event_id"), member_data
     )
     return {"ticket_id": ticket_id}
@@ -90,7 +90,7 @@ async def register(
 )
 async def unregister(
     ticket_id: UUID,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    tickets_service: Annotated[TicketsService, Depends(get_tickets_service)],
 ):
     """Отменить регистрацию участника на событие.
 
@@ -101,8 +101,7 @@ async def unregister(
     - {"success": bool} - Успешная отмена регистрации.
 
     """
-    ticket_service = TicketsService(session)
-    member = await ticket_service.get_by_id(ticket_id, load_event=True)
+    member = await tickets_service.get_by_id(ticket_id, load_event=True)
     if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Member not found"
@@ -112,5 +111,5 @@ async def unregister(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The event has already passed",
         )
-    await ticket_service.unregister(member.event_id, ticket_id)
+    await tickets_service.unregister(member.event_id, ticket_id)
     return {"success": True}
