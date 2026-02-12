@@ -23,6 +23,12 @@ class EventOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EventOutExtendedPlace(EventOut):
+    """Cхема возвращаемого события с расширенным местом проведения."""
+
+    place: PlaceOutExtended
+
+
 class EventListOutPaginated(BaseModel):
     """Пагинированный список событий."""
 
@@ -30,9 +36,3 @@ class EventListOutPaginated(BaseModel):
     next: HttpUrl | None
     previous: HttpUrl | None
     results: list[EventOut]
-
-
-class EventOutExtendedPlace(EventOut):
-    """Cхема возвращаемого события с расширенным местом проведения."""
-
-    place: PlaceOutExtended
