@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import EventFilter
+from app.api.filters import EventFilter
 from app.orm.models import Event
 from app.orm.repositories import EventRepository
 from app.services.events_provider import (

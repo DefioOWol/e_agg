@@ -6,7 +6,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi_filter import FilterDepends
 
-from app.api.dependencies import EventFilter, get_events_service
+from app.api.dependencies import get_events_service
+from app.api.filters import EventFilter
 from app.api.schemas.events import EventListOutPaginated, EventOutExtendedPlace
 from app.orm.models import EventStatus
 from app.services import EventsService
