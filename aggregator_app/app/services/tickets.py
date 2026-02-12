@@ -26,7 +26,7 @@ class TicketsService:
         self, event_id: UUID, member_data: dict[str, Any]
     ) -> str:
         """Зарегистрировать участника на событие."""
-        await with_events_provider(
+        return await with_events_provider(
             self._register_member,
             func_kwargs={"event_id": event_id, "member_data": member_data},
             on_success=self._create_member,
