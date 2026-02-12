@@ -200,6 +200,8 @@ class EventsPaginator:
             )
             self._cursor = self._client.extract_cursor(response)
             self._events = response["results"]
+            if not self._events:
+                raise StopAsyncIteration
             self._current = 0
         event = self._events[self._current]
         self._current += 1
