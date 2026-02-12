@@ -3,7 +3,7 @@
 from datetime import date
 
 from fastapi_filter.contrib.sqlalchemy import Filter
-from pydantic import Field, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from app.orm.models import Event
 
@@ -29,5 +29,4 @@ class EventFilter(Filter):
     class Constants(Filter.Constants):
         model = Event
 
-    class Config:
-        validate_by_name = True
+    model_config = ConfigDict(validate_by_name=True)
