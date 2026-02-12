@@ -16,10 +16,10 @@ class Member(Base):
     ticket_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, nullable=False
     )
-    first_name: Mapped[str] = mapped_column(String(32), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(32), nullable=False)
-    seat: Mapped[str] = mapped_column(String(8), nullable=False)
-    email: Mapped[str] = mapped_column(String(32), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    seat: Mapped[str] = mapped_column(String(16), nullable=False)
+    email: Mapped[str] = mapped_column(String(128), nullable=False)
     event_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("events.id"), nullable=False
     )

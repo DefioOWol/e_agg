@@ -26,7 +26,7 @@ class Event(Base):
     id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, nullable=False
     )
-    name: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
     place_id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("places.id"), nullable=False
     )

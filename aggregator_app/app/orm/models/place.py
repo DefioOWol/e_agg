@@ -17,9 +17,9 @@ class Place(Base):
     id: Mapped[uuid_pkg.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, nullable=False
     )
-    name: Mapped[str] = mapped_column(String(64), nullable=False)
-    city: Mapped[str] = mapped_column(String(64), nullable=False)
-    address: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    city: Mapped[str] = mapped_column(String(128), nullable=False)
+    address: Mapped[str] = mapped_column(String(128), nullable=False)
     seats_pattern: Mapped[str] = mapped_column(String(128), nullable=False)
     changed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
