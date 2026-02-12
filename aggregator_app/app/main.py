@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from app.api.routers import events, healthcheck, sync, tickets
 from app.error_handlers import validation_exception_handler
 from app.orm.db_manager import db_manager
-from app.services import scheduler, sync_service
+from app.services import get_sync_service, scheduler
 
 
 @asynccontextmanager
@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 
     """
     await db_manager.init()
-    await sync_service.init_job()
+    await get_sync_service().init_job()
     scheduler.start()
     cache.setup("mem://")
     yield

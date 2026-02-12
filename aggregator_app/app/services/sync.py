@@ -244,10 +244,14 @@ class SyncService:
 
 
 scheduler = AsyncIOScheduler(timezone=UTC)
-sync_service = SyncService(
-    db_manager,
-    scheduler,
-    EventsProviderClient(),
-    EventsPaginator(),
-    EventsProviderParser(),
-)
+
+
+def get_sync_service() -> SyncService:
+    """Получить сервис синхронизации."""
+    return SyncService(
+        db_manager,
+        scheduler,
+        EventsProviderClient(),
+        EventsPaginator(),
+        EventsProviderParser(),
+    )

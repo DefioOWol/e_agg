@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, status
 
-from app.services import sync_service
+from app.services import get_sync_service
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -14,4 +14,4 @@ router = APIRouter(prefix="/sync", tags=["sync"])
 )
 async def trigger():
     """Вызвать внеплановую синхронизацию данных."""
-    sync_service.trigger_job()
+    get_sync_service().trigger_job()
