@@ -1,6 +1,6 @@
 """Репозиторий мест проведения событий."""
 
-from typing import Any
+from typing import Any, Protocol
 
 from sqlalchemy.dialects.postgresql import insert
 
@@ -8,8 +8,8 @@ from app.orm.models import Place
 from app.orm.repositories.base import BaseRepository
 
 
-class PlaceRepository(BaseRepository):
-    """Репозиторий мест проведения событий."""
+class IPlaceRepository(Protocol):
+    """Интерфейс репозитория мест проведения."""
 
     async def upsert(self, json_data_list: list[dict[str, Any]]):
         """Вставить или обновить записи при конфликте.
@@ -19,6 +19,16 @@ class PlaceRepository(BaseRepository):
         к требуемым типам данных значениями.
 
         """
+
+
+class PlaceRepository(BaseRepository, IPlaceRepository):
+    """Репозиторий мест проведения событий.
+
+    Реализует `IPlaceRepository`.
+
+    """
+
+    async def upsert(self, json_data_list: list[dict[str, Any]]):
         stmt = insert(Place).values(json_data_list)
         stmt = stmt.on_conflict_do_update(
             index_elements=[Place.id],

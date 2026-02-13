@@ -1,13 +1,15 @@
 """Репозиторий метаданных синхронизации."""
 
+from typing import Protocol
+
 from sqlalchemy import select
 
 from app.orm.models import SyncMeta, SyncStatus
 from app.orm.repositories.base import BaseRepository
 
 
-class SyncMetaRepository(BaseRepository):
-    """Репозиторий метаданных синхронизации."""
+class ISyncMetaRepository(Protocol):
+    """Интерфейс репозитория метаданных синхронизации."""
 
     async def get_or_add(
         self, *, for_update: bool = False
@@ -19,9 +21,21 @@ class SyncMetaRepository(BaseRepository):
             по умолчанию False.
 
         Возвращает:
-        - tuple[SyncMeta, bool] - объект метаданных и статус создания записи.
+        - Объект метаданных и статус создания записи.
 
         """
+
+
+class SyncMetaRepository(BaseRepository, ISyncMetaRepository):
+    """Репозиторий метаданных синхронизации.
+
+    Реализует `ISyncMetaRepository`.
+
+    """
+
+    async def get_or_add(
+        self, *, for_update: bool = False
+    ) -> tuple[SyncMeta, bool]:
         stmt = select(SyncMeta).where(SyncMeta.id == 1)
         if for_update:
             stmt = stmt.with_for_update()
