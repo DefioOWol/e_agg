@@ -1,8 +1,9 @@
 """Модуль взаимодействия с EventsProviderAPI."""
 
 from collections.abc import Awaitable, Callable
+from contextlib import AbstractAsyncContextManager
 from datetime import UTC, date, datetime
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID
 
 import backoff
@@ -14,14 +15,57 @@ from app.config import settings
 from app.orm.models import Base, Event, EventStatus, Place
 
 
-class EventsProviderClient:
-    """Клиент для взаимодействия с EventsProviderAPI.
-
-    Явялется асинхронным контекстным менеджером.
-
-    """
+class IEventsProviderClient(
+    AbstractAsyncContextManager["IEventsProviderClient"], Protocol
+):
+    """Интерфейс клиента для взаимодействия с EventsProviderAPI."""
 
     BASE_URL = "http://events-provider.dev-1.python-labs.ru"
+
+    async def get_events(
+        self, changed_at: date, cursor: str | None = None
+    ) -> dict[str, Any]:
+        """Получить события.
+
+        Аргументы:
+        - `changed_at` - Дата последнего изменения в ISO формате.
+        - `cursor` - Курсор пагинации; по умолчанию None.
+
+        """
+
+    async def get_seats(self, event_id: UUID) -> dict[str, Any]:
+        """Получить свободные места на событии."""
+
+    async def register_member(
+        self, event_id: UUID, member_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Зарегистрировать участника на событие.
+
+        Аргументы:
+        - `event_id` - UUID события.
+        - `member_data` - Данные участника.
+
+        """
+
+    async def unregister_member(
+        self, event_id: UUID, ticket_id: UUID
+    ) -> dict[str, Any]:
+        """Отменить регистрацию участника на событие."""
+
+    @staticmethod
+    def extract_cursor(response: dict[str, Any]) -> str | None:
+        """Извлечь курсор из ответа."""
+        if (cursor := response.get("next")) is not None:
+            cursor = cursor.rsplit("cursor=", 1)[1]
+        return cursor
+
+
+class EventsProviderClient(IEventsProviderClient):
+    """Клиент для взаимодействия с EventsProviderAPI.
+
+    Реализует `IEventsProviderClient`.
+
+    """
 
     _BACKOFF_ON_EXCEPTION = backoff.on_exception(
         backoff.expo,
@@ -85,17 +129,16 @@ class EventsProviderClient:
 
     @_BACKOFF_ON_EXCEPTION
     async def unregister_member(
-        self, event_id: UUID, ticket_id: str
+        self, event_id: UUID, ticket_id: UUID
     ) -> dict[str, Any]:
         """Отменить регистрацию участника на событие."""
         url = f"/api/events/{event_id}/unregister/"
         async with self._session.delete(
-            url, json={"ticket_id": ticket_id}
+            url, json={"ticket_id": str(ticket_id)}
         ) as response:
             return await response.json()
 
     async def __aenter__(self):
-        """Вход в контекстный менеджер."""
         self._session = ClientSession(
             self.BASE_URL,
             headers={"x-api-key": settings.lms_api_key.get_secret_value()},
@@ -105,20 +148,12 @@ class EventsProviderClient:
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        """Выход из контекстного менеджера."""
         await self._session.close()
         self._session = None
 
-    @staticmethod
-    def extract_cursor(response: dict[str, Any]) -> str | None:
-        """Извлечь курсор из ответа."""
-        if (cursor := response.get("next")) is not None:
-            cursor = cursor.rsplit("cursor=", 1)[1]
-        return cursor
-
 
 async def with_events_provider(
-    client: EventsProviderClient,
+    client: IEventsProviderClient,
     func: Callable[..., Awaitable[Any]],
     *,
     func_kwargs: dict[str, Any] | None = None,
@@ -132,7 +167,7 @@ async def with_events_provider(
     Аргументы:
     - `client` - Экземпляр клиента для взаимодействия.
     - `func` - Функция для выполнения запроса;
-        первый аргумент - `EventsProviderClient`.
+        первый аргумент - `IEventsProviderClient`.
     - `func_kwargs` - Параметры для функции `func`; по умолчанию None.
     - `on_success` - Функция для обработки успешного запроса;
         первый аргумент - результат выполнения `func`; по умолчанию None.
@@ -168,12 +203,12 @@ class EventsPaginator:
     """
 
     def __call__(
-        self, client: EventsProviderClient, changed_at: date
+        self, client: IEventsProviderClient, changed_at: date
     ) -> "EventsPaginator":
         """Установить параметры пагинатора.
 
         Аргументы:
-        - `client`: `EventsProviderClient` - Клиент для взаимодействия.
+        - `client`: `IEventsProviderClient` - Клиент для взаимодействия.
         - `changed_at` - Дата последнего изменения в ISO формате.
 
         """

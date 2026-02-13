@@ -10,7 +10,7 @@ from app.api.filters import EventFilter
 from app.orm.models import Event
 from app.orm.uow import IUnitOfWork
 from app.services.events_provider import (
-    EventsProviderClient,
+    IEventsProviderClient,
     with_events_provider,
 )
 
@@ -21,7 +21,7 @@ class EventsService:
     def __init__(
         self,
         uow: IUnitOfWork,
-        client: EventsProviderClient,
+        client: IEventsProviderClient,
     ):
         self._uow = uow
         self._client = client
@@ -76,7 +76,7 @@ class EventsService:
         )
 
     async def _fetch_seats(
-        self, client: EventsProviderClient, event_id: UUID
+        self, client: IEventsProviderClient, event_id: UUID
     ) -> list[str]:
         """Получить свободные места на событии."""
         result = await client.get_seats(event_id)
