@@ -80,9 +80,10 @@ class TicketsService:
         self, ticket_id: str, event_id: UUID, member_data: dict[str, Any]
     ) -> str:
         """Создать участника в локальной базе данных."""
+        member_data.update({"event_id": event_id, "ticket_id": ticket_id})
         async with self._uow as uow:
-            member_data.update({"event_id": event_id, "ticket_id": ticket_id})
             await uow.members.create(member_data)
+            await uow.commit()
         return ticket_id
 
     async def unregister(self, event_id: UUID, ticket_id: UUID):
@@ -100,12 +101,13 @@ class TicketsService:
         self, client: IEventsProviderClient, event_id: UUID, ticket_id: UUID
     ):
         """Отменить регистрацию участника на событие."""
-        await client.unregister_member(event_id, str(ticket_id))
+        await client.unregister_member(event_id, ticket_id)
 
     async def _delete_member(self, _: None, ticket_id: UUID):
         """Удалить участника."""
         async with self._uow as uow:
             await uow.members.delete(ticket_id)
+            await uow.commit()
 
     async def _raise_external_error(self, e: Exception):
         """Вызвать ошибку на внешнюю регистрацию.

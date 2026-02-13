@@ -53,7 +53,7 @@ class EventsService:
             stmt = filter_.filter(stmt)
             count = await uow.events.get_select_scalar(stmt)
 
-            return events, count
+        return events, count
 
     async def get_by_id(self, event_id: UUID) -> Event | None:
         """Получить событие по ID."""
