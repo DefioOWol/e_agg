@@ -1,7 +1,7 @@
 """Unit of Work."""
 
-from contextlib import AbstractAsyncContextManager
-from typing import Protocol
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from typing import AsyncGenerator, Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,10 @@ class IUnitOfWork(AbstractAsyncContextManager["IUnitOfWork"], Protocol):
     places: IPlaceRepository
     members: IMemberRepository
     sync_meta: ISyncMetaRepository
+
+    @asynccontextmanager
+    async def begin(self) -> AsyncGenerator["IUnitOfWork", None]:
+        """Начать транзакцию."""
 
     async def commit(self):
         """Зафиксировать транзакцию."""
@@ -54,12 +58,16 @@ class SqlAlchemyUnitOfWork(IUnitOfWork):
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        if exc is None:
-            await self.commit()
-        else:
+        if exc is not None:
             await self.rollback()
         await self._session_cm.__aexit__(exc_type, exc, tb)
         self._session_cm = self._session = None
+
+    @asynccontextmanager
+    async def begin(self) -> AsyncGenerator["IUnitOfWork", None]:
+        if self._session is not None:
+            async with self._session.begin():
+                yield self
 
     async def commit(self):
         if self._session is not None:
