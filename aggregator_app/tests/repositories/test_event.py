@@ -4,8 +4,12 @@ import pytest
 from sqlalchemy import select
 
 from app.orm.models import Event, EventStatus
-from app.orm.repositories import EventRepository
+from app.orm.repositories.event import EventRepository, IEventRepository
 from tests.repositories.helpers import create_event, create_place, model_to_dict
+
+
+def _get_event_repository(session) -> IEventRepository:
+    return EventRepository(session)
 
 
 @pytest.mark.asyncio
@@ -19,7 +23,7 @@ async def test_get_paginated_with_page_size(session):
         session.add(create_event(place))
     await session.flush()
 
-    repo = EventRepository(session)
+    repo = _get_event_repository(session)
     stmt = select(Event)
     result = await repo.get_paginated(stmt, page=1, page_size=2)
     assert len(result) == 2
@@ -42,7 +46,7 @@ async def test_get_paginated_without_page_size(session):
         session.add(create_event(place))
     await session.flush()
 
-    repo = EventRepository(session)
+    repo = _get_event_repository(session)
     result = await repo.get_paginated(select(Event), page=1, page_size=None)
     assert len(result) == 3
 
@@ -50,7 +54,7 @@ async def test_get_paginated_without_page_size(session):
 @pytest.mark.asyncio
 async def test_upsert_create_new(session):
     """Проверить создание новой записи через upsert."""
-    repo = EventRepository(session)
+    repo = _get_event_repository(session)
     place = create_place()
     session.add(place)
     await session.flush()
@@ -68,7 +72,7 @@ async def test_upsert_create_new(session):
 @pytest.mark.asyncio
 async def test_upsert_update_existing(session):
     """Проверить обновление существующей записи через upsert."""
-    repo = EventRepository(session)
+    repo = _get_event_repository(session)
     place = create_place()
     session.add(place)
     await session.flush()

@@ -1,4 +1,4 @@
-"""Тест миграций."""
+"""Тесты миграций."""
 
 import pytest
 from alembic.script import Script, ScriptDirectory

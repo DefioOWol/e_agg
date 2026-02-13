@@ -3,14 +3,18 @@
 import pytest
 
 from app.orm.models import Place
-from app.orm.repositories import PlaceRepository
+from app.orm.repositories.place import IPlaceRepository, PlaceRepository
 from tests.repositories.helpers import create_place, model_to_dict
+
+
+def _get_place_repository(session) -> IPlaceRepository:
+    return PlaceRepository(session)
 
 
 @pytest.mark.asyncio
 async def test_upsert_create_new(session):
     """Проверить создание новой записи через upsert."""
-    repo = PlaceRepository(session)
+    repo = _get_place_repository(session)
     place = create_place()
 
     await repo.upsert([model_to_dict(place)])
@@ -24,7 +28,7 @@ async def test_upsert_create_new(session):
 @pytest.mark.asyncio
 async def test_upsert_update_existing(session):
     """Проверить обновление существующей записи через upsert."""
-    repo = PlaceRepository(session)
+    repo = _get_place_repository(session)
     place = create_place()
     session.add(place)
     await session.flush()

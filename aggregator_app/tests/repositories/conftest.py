@@ -19,14 +19,12 @@ def apply_migrations():
 
 @pytest_asyncio.fixture
 async def session():
-    """Получить сессию базы данных."""
     async with db_manager.session() as session:
         yield session
 
 
 @pytest_asyncio.fixture
 async def event(session):
-    """Создать и получить событие."""
     place = create_place()
     event = create_event(place)
     session.add(place)

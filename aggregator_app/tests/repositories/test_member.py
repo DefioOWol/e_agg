@@ -5,13 +5,16 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.orm.models import Event, Member
-from app.orm.repositories import MemberRepository
+from app.orm.repositories.member import IMemberRepository, MemberRepository
+
+
+def _get_member_repository(session) -> IMemberRepository:
+    return MemberRepository(session)
 
 
 async def _create_member(
-    repo: MemberRepository, ticket_id: UUID, event: Event
+    repo: IMemberRepository, ticket_id: UUID, event: Event
 ) -> Member:
-    """Создать участника."""
     return await repo.create(
         {
             "ticket_id": ticket_id,
@@ -27,7 +30,7 @@ async def _create_member(
 @pytest.mark.asyncio
 async def test_create_and_get_by_id(session, event):
     """Проверить создание и получение участника."""
-    repo = MemberRepository(session)
+    repo = _get_member_repository(session)
     ticket_id = uuid4()
     await _create_member(repo, ticket_id, event)
     await session.flush()
@@ -41,7 +44,7 @@ async def test_create_and_get_by_id(session, event):
 @pytest.mark.asyncio
 async def test_get_by_id_not_found(session):
     """Проверить получение несуществующего участника."""
-    repo = MemberRepository(session)
+    repo = _get_member_repository(session)
     member = await repo.get_by_id(uuid4(), load_event=False)
     assert member is None
 
@@ -49,7 +52,7 @@ async def test_get_by_id_not_found(session):
 @pytest.mark.asyncio
 async def test_get_by_id_load_event(session, event):
     """Проверить получение участника с подгрузкой события."""
-    repo = MemberRepository(session)
+    repo = _get_member_repository(session)
     ticket_id = uuid4()
     await _create_member(repo, ticket_id, event)
     await session.flush()
@@ -63,7 +66,7 @@ async def test_get_by_id_load_event(session, event):
 @pytest.mark.asyncio
 async def test_delete(session, event):
     """Проверить удаление участника."""
-    repo = MemberRepository(session)
+    repo = _get_member_repository(session)
     ticket_id = uuid4()
     await _create_member(repo, ticket_id, event)
     await session.flush()

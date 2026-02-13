@@ -7,13 +7,20 @@ from sqlalchemy.exc import IntegrityError
 
 from app.orm.db_manager import db_manager
 from app.orm.models import SyncStatus
-from app.orm.repositories import SyncMetaRepository
+from app.orm.repositories.sync_meta import (
+    ISyncMetaRepository,
+    SyncMetaRepository,
+)
+
+
+def _get_sync_meta_repository(session) -> ISyncMetaRepository:
+    return SyncMetaRepository(session)
 
 
 @pytest.mark.asyncio
 async def test_get_or_add_new(session):
     """Проверить создание новых метаданных."""
-    repo = SyncMetaRepository(session)
+    repo = _get_sync_meta_repository(session)
     sync_meta, is_new = await repo.get_or_add()
     assert is_new is True
     assert sync_meta.id == 1
@@ -25,7 +32,7 @@ async def test_get_or_add_new(session):
 @pytest.mark.asyncio
 async def test_get_or_add_existing(session):
     """Проверить получение уже существующих метаданных."""
-    repo = SyncMetaRepository(session)
+    repo = _get_sync_meta_repository(session)
     await repo.get_or_add()
     await session.flush()
 
@@ -41,7 +48,7 @@ async def test_get_or_add_concurrent():
 
     async def get_or_add_in_new_session():
         async with db_manager.session() as session:
-            repo = SyncMetaRepository(session)
+            repo = _get_sync_meta_repository(session)
             _, is_new = await repo.get_or_add()
             try:
                 await session.commit()

@@ -8,12 +8,10 @@ from app.orm.models import Base, Event, EventStatus, Place
 
 
 def get_datetime_now() -> datetime:
-    """Получить текущие дату и время в UTC."""
     return datetime.now(UTC)
 
 
 def create_place() -> Place:
-    """Создать место проведения."""
     place = Place(
         id=uuid4(),
         name="Test place",
@@ -27,7 +25,6 @@ def create_place() -> Place:
 
 
 def create_event(place: Place) -> Event:
-    """Создать событие."""
     event = Event(
         id=uuid4(),
         name="Test Event",
@@ -43,5 +40,4 @@ def create_event(place: Place) -> Event:
 
 
 def model_to_dict(model: Base) -> dict[str, Any]:
-    """Преобразовать модель в словарь."""
     return {c.key: getattr(model, c.key) for c in model.__table__.c}

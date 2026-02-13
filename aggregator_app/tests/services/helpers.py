@@ -8,12 +8,10 @@ from app.orm.models import EventStatus
 
 
 def get_raw_iso_datetime_now() -> str:
-    """Получить текущую дату и время в ISO формате."""
     return datetime.now(UTC).isoformat()
 
 
 def get_raw_place() -> dict[str, Any]:
-    """Получить словарь тестового места проведения."""
     return {
         "id": str(uuid4()),
         "name": "Test hall",
@@ -26,7 +24,6 @@ def get_raw_place() -> dict[str, Any]:
 
 
 def get_raw_event(status: EventStatus = EventStatus.NEW) -> dict[str, Any]:
-    """Получить словарь тестового события."""
     return {
         "id": str(uuid4()),
         "name": "Test event",
@@ -42,7 +39,6 @@ def get_raw_event(status: EventStatus = EventStatus.NEW) -> dict[str, Any]:
 
 
 def get_raw_member() -> dict[str, Any]:
-    """Получить словарь тестового участника."""
     return {
         "first_name": "First",
         "last_name": "Last",
@@ -55,7 +51,6 @@ class FakeEventsProviderClient:
     """Тестовый клиент EventsProviderAPI."""
 
     def __init__(self, **kwargs: Any):
-        """Инициализировать клиент."""
         self._kwargs = kwargs
 
     async def get_events(

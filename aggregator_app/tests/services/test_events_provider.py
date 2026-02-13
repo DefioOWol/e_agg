@@ -11,6 +11,7 @@ from app.services.events_provider import (
     EventsPaginator,
     EventsProviderClient,
     EventsProviderParser,
+    IEventsProviderClient,
 )
 from tests.services.helpers import (
     FakeEventsProviderClient,
@@ -20,12 +21,15 @@ from tests.services.helpers import (
 
 
 def _get_mock_response(expected_result: dict) -> AsyncMock:
-    """Получить mock-ответ с указанным возвращаемым результатом."""
     mock_response = AsyncMock()
     mock_response.__aenter__.return_value = mock_response
     mock_response.__aexit__.return_value = None
     mock_response.json = AsyncMock(return_value=expected_result)
     return mock_response
+
+
+def _get_events_provider_client() -> IEventsProviderClient:
+    return EventsProviderClient()
 
 
 @pytest.mark.asyncio
@@ -42,7 +46,7 @@ async def test_get_events():
     mock_session = MagicMock()
     mock_session.get.return_value = mock_response
 
-    client = EventsProviderClient()
+    client = _get_events_provider_client()
     client._session = mock_session
 
     changed_at = date(2000, 1, 1)
@@ -69,7 +73,7 @@ async def test_get_seats():
     mock_session = MagicMock()
     mock_session.get.return_value = mock_response
 
-    client = EventsProviderClient()
+    client = _get_events_provider_client()
     client._session = mock_session
 
     event_id = uuid4()
@@ -88,7 +92,7 @@ async def test_register_member():
     mock_session = MagicMock()
     mock_session.post.return_value = mock_response
 
-    client = EventsProviderClient()
+    client = _get_events_provider_client()
     client._session = mock_session
 
     event_id = uuid4()
@@ -110,7 +114,7 @@ async def test_unregister_member():
     mock_session = MagicMock()
     mock_session.delete.return_value = mock_response
 
-    client = EventsProviderClient()
+    client = _get_events_provider_client()
     client._session = mock_session
 
     event_id = uuid4()
@@ -125,7 +129,7 @@ async def test_unregister_member():
 
 def test_extract_cursor():
     """Проверить извлечение курсора из ответа."""
-    cursor = EventsProviderClient.extract_cursor(
+    cursor = _get_events_provider_client().extract_cursor(
         {
             "next": (
                 "http://example.com/api/events/"
@@ -134,7 +138,7 @@ def test_extract_cursor():
         }
     )
     assert cursor == "cursor-token"
-    cursor = EventsProviderClient.extract_cursor({})
+    cursor = _get_events_provider_client().extract_cursor({})
     assert cursor is None
 
 
