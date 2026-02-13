@@ -15,7 +15,7 @@ from app.orm.repositories.sync_meta import (
 )
 
 
-class IUnitOfWork(AbstractAsyncContextManager, Protocol):
+class IUnitOfWork(AbstractAsyncContextManager["IUnitOfWork"], Protocol):
     """Интерфейс Unit of Work."""
 
     events: IEventRepository

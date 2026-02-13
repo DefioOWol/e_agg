@@ -5,10 +5,9 @@ from uuid import UUID
 
 from aiohttp import ClientResponseError
 from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.orm.models import Member
-from app.orm.repositories import MemberRepository
+from app.orm.uow import IUnitOfWork
 from app.services.events_provider import (
     EventsProviderClient,
     with_events_provider,
@@ -18,11 +17,13 @@ from app.services.events_provider import (
 class TicketsService:
     """Сервис регистрации участников."""
 
-    def __init__(self, session: AsyncSession, client: EventsProviderClient):
-        """Инициализировать сервис регистрации участников."""
-        self._session = session
+    def __init__(
+        self,
+        uow: IUnitOfWork,
+        client: EventsProviderClient,
+    ):
+        self._uow = uow
         self._client = client
-        self._member_repo = MemberRepository(session)
 
     async def get_by_id(
         self, ticket_id: UUID, *, load_event: bool = False
@@ -34,9 +35,11 @@ class TicketsService:
         - `load_event` - Флаг подгрузки связанного события; по умолчанию False.
 
         """
-        return await self._member_repo.get_by_id(
-            ticket_id, load_event=load_event
-        )
+        async with self._uow as uow:
+            return await uow.members.get_by_id(
+                ticket_id,
+                load_event=load_event,
+            )
 
     async def register(
         self, event_id: UUID, member_data: dict[str, Any]
@@ -77,9 +80,9 @@ class TicketsService:
         self, ticket_id: str, event_id: UUID, member_data: dict[str, Any]
     ) -> str:
         """Создать участника в локальной базе данных."""
-        member_data.update({"event_id": event_id, "ticket_id": ticket_id})
-        await self._member_repo.create(member_data)
-        await self._session.commit()
+        async with self._uow as uow:
+            member_data.update({"event_id": event_id, "ticket_id": ticket_id})
+            await uow.members.create(member_data)
         return ticket_id
 
     async def unregister(self, event_id: UUID, ticket_id: UUID):
@@ -101,8 +104,8 @@ class TicketsService:
 
     async def _delete_member(self, _: None, ticket_id: UUID):
         """Удалить участника."""
-        await self._member_repo.delete(ticket_id)
-        await self._session.commit()
+        async with self._uow as uow:
+            await uow.members.delete(ticket_id)
 
     async def _raise_external_error(self, e: Exception):
         """Вызвать ошибку на внешнюю регистрацию.
