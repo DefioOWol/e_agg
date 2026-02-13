@@ -20,7 +20,7 @@ from tests.services.helpers import (
 )
 
 
-def _get_mock_response(expected_result: dict) -> AsyncMock:
+def _get_mock_response(expected_result):
     mock_response = AsyncMock()
     mock_response.__aenter__.return_value = mock_response
     mock_response.__aexit__.return_value = None
@@ -34,7 +34,6 @@ def _get_events_provider_client() -> IEventsProviderClient:
 
 @pytest.mark.asyncio
 async def test_get_events():
-    """Проверить запросы с get_events без и с курсором."""
     expected_result = {
         "count": 0,
         "next": None,
@@ -66,7 +65,6 @@ async def test_get_events():
 
 @pytest.mark.asyncio
 async def test_get_seats():
-    """Проверить запрос с get_seats."""
     expected_result = {"seats": ["A1", "A2", "A3"]}
     mock_response = _get_mock_response(expected_result)
 
@@ -85,7 +83,6 @@ async def test_get_seats():
 
 @pytest.mark.asyncio
 async def test_register_member():
-    """Проверить запрос с register_member."""
     expected_result = {"ticket_id": str(uuid4())}
     mock_response = _get_mock_response(expected_result)
 
@@ -107,7 +104,6 @@ async def test_register_member():
 
 @pytest.mark.asyncio
 async def test_unregister_member():
-    """Проверить запрос с unregister_member."""
     expected_result = {"success": True}
     mock_response = _get_mock_response(expected_result)
 
@@ -128,7 +124,6 @@ async def test_unregister_member():
 
 
 def test_extract_cursor():
-    """Проверить извлечение курсора из ответа."""
     cursor = _get_events_provider_client().extract_cursor(
         {
             "next": (
@@ -144,7 +139,6 @@ def test_extract_cursor():
 
 @pytest.mark.asyncio
 async def test_events_paginator_empty():
-    """Проверить пагинатор с пустым результатом."""
     client = FakeEventsProviderClient(
         pages={
             None: {
@@ -162,7 +156,6 @@ async def test_events_paginator_empty():
 
 @pytest.mark.asyncio
 async def test_events_paginator_non_empty():
-    """Проверить пагинатор с непустым результатом."""
     client = FakeEventsProviderClient(
         pages={
             None: {
@@ -181,7 +174,6 @@ async def test_events_paginator_non_empty():
 
 
 def test_events_provider_parser():
-    """Проверить парсер событий."""
     parser = EventsProviderParser()
     event_dict, place_dict = parser.parse_event_dict(get_raw_event())
 

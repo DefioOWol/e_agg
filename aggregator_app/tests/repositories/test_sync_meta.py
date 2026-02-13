@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.orm.db_manager import db_manager
 from app.orm.models import SyncStatus
@@ -13,13 +14,12 @@ from app.orm.repositories.sync_meta import (
 )
 
 
-def _get_sync_meta_repository(session) -> ISyncMetaRepository:
+def _get_sync_meta_repository(session: AsyncSession) -> ISyncMetaRepository:
     return SyncMetaRepository(session)
 
 
 @pytest.mark.asyncio
-async def test_get_or_add_new(session):
-    """Проверить создание новых метаданных."""
+async def test_get_or_add_new(session: AsyncSession):
     repo = _get_sync_meta_repository(session)
     sync_meta, is_new = await repo.get_or_add()
     assert is_new is True
@@ -30,8 +30,7 @@ async def test_get_or_add_new(session):
 
 
 @pytest.mark.asyncio
-async def test_get_or_add_existing(session):
-    """Проверить получение уже существующих метаданных."""
+async def test_get_or_add_existing(session: AsyncSession):
     repo = _get_sync_meta_repository(session)
     await repo.get_or_add()
     await session.flush()
@@ -44,7 +43,6 @@ async def test_get_or_add_existing(session):
 
 @pytest.mark.asyncio
 async def test_get_or_add_concurrent():
-    """Проверить конкурентные запросы на получение метаданных."""
 
     async def get_or_add_in_new_session():
         async with db_manager.session() as session:

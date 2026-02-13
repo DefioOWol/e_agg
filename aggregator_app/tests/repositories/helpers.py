@@ -1,17 +1,16 @@
 """Вспомогательные функции для репозиториев."""
 
 from datetime import UTC, datetime
-from typing import Any
 from uuid import uuid4
 
 from app.orm.models import Base, Event, EventStatus, Place
 
 
-def get_datetime_now() -> datetime:
+def get_datetime_now():
     return datetime.now(UTC)
 
 
-def create_place() -> Place:
+def create_place():
     place = Place(
         id=uuid4(),
         name="Test place",
@@ -24,7 +23,7 @@ def create_place() -> Place:
     return place
 
 
-def create_event(place: Place) -> Event:
+def create_event(place: Place):
     event = Event(
         id=uuid4(),
         name="Test Event",
@@ -39,5 +38,5 @@ def create_event(place: Place) -> Event:
     return event
 
 
-def model_to_dict(model: Base) -> dict[str, Any]:
+def model_to_dict(model: Base):
     return {c.key: getattr(model, c.key) for c in model.__table__.c}

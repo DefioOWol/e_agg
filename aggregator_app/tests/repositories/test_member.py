@@ -3,18 +3,19 @@
 from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.orm.models import Event, Member
+from app.orm.models import Event
 from app.orm.repositories.member import IMemberRepository, MemberRepository
 
 
-def _get_member_repository(session) -> IMemberRepository:
+def _get_member_repository(session: AsyncSession) -> IMemberRepository:
     return MemberRepository(session)
 
 
 async def _create_member(
     repo: IMemberRepository, ticket_id: UUID, event: Event
-) -> Member:
+):
     return await repo.create(
         {
             "ticket_id": ticket_id,
@@ -28,8 +29,7 @@ async def _create_member(
 
 
 @pytest.mark.asyncio
-async def test_create_and_get_by_id(session, event):
-    """Проверить создание и получение участника."""
+async def test_create_and_get_by_id(session: AsyncSession, event: Event):
     repo = _get_member_repository(session)
     ticket_id = uuid4()
     await _create_member(repo, ticket_id, event)
@@ -42,16 +42,14 @@ async def test_create_and_get_by_id(session, event):
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_not_found(session):
-    """Проверить получение несуществующего участника."""
+async def test_get_by_id_not_found(session: AsyncSession):
     repo = _get_member_repository(session)
     member = await repo.get_by_id(uuid4(), load_event=False)
     assert member is None
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_load_event(session, event):
-    """Проверить получение участника с подгрузкой события."""
+async def test_get_by_id_with_load_event(session: AsyncSession, event: Event):
     repo = _get_member_repository(session)
     ticket_id = uuid4()
     await _create_member(repo, ticket_id, event)
@@ -64,8 +62,7 @@ async def test_get_by_id_load_event(session, event):
 
 
 @pytest.mark.asyncio
-async def test_delete(session, event):
-    """Проверить удаление участника."""
+async def test_delete(session: AsyncSession, event: Event):
     repo = _get_member_repository(session)
     ticket_id = uuid4()
     await _create_member(repo, ticket_id, event)

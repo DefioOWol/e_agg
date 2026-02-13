@@ -1,19 +1,19 @@
 """Тесты репозитория мест проведения."""
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.orm.models import Place
 from app.orm.repositories.place import IPlaceRepository, PlaceRepository
 from tests.repositories.helpers import create_place, model_to_dict
 
 
-def _get_place_repository(session) -> IPlaceRepository:
+def _get_place_repository(session: AsyncSession) -> IPlaceRepository:
     return PlaceRepository(session)
 
 
 @pytest.mark.asyncio
-async def test_upsert_create_new(session):
-    """Проверить создание новой записи через upsert."""
+async def test_upsert_create_new(session: AsyncSession):
     repo = _get_place_repository(session)
     place = create_place()
 
@@ -26,8 +26,7 @@ async def test_upsert_create_new(session):
 
 
 @pytest.mark.asyncio
-async def test_upsert_update_existing(session):
-    """Проверить обновление существующей записи через upsert."""
+async def test_upsert_update_existing(session: AsyncSession):
     repo = _get_place_repository(session)
     place = create_place()
     session.add(place)
