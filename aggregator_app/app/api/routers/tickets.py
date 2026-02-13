@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.dependencies import get_events_service, get_tickets_service
 from app.api.schemas.members import MemberIn
 from app.orm.models import EventStatus
-from app.services import EventsService, TicketsService
+from app.services.events import EventsService
+from app.services.tickets import TicketsService
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 

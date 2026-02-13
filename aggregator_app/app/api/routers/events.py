@@ -10,7 +10,7 @@ from app.api.dependencies import get_events_service
 from app.api.filters import EventFilter
 from app.api.schemas.events import EventListOutPaginated, EventOutExtendedPlace
 from app.orm.models import EventStatus
-from app.services import EventsService
+from app.services.events import EventsService
 
 router = APIRouter(prefix="/events", tags=["events"])
 

@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from app.api.routers import events, healthcheck, sync, tickets
 from app.error_handlers import validation_exception_handler
 from app.orm.db_manager import db_manager
-from app.services import get_sync_service, scheduler
+from app.services.sync import get_sync_service, scheduler
 
 
 @asynccontextmanager

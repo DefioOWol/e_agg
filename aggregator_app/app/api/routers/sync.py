@@ -1,8 +1,10 @@
 """API синхронизации."""
 
-from fastapi import APIRouter, status
+from typing import Annotated
 
-from app.services import get_sync_service
+from fastapi import APIRouter, Depends, status
+
+from app.services.sync import SyncService, get_sync_service
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -12,6 +14,8 @@ router = APIRouter(prefix="/sync", tags=["sync"])
     status_code=status.HTTP_202_ACCEPTED,
     summary="Вызвать синхронизацию",
 )
-async def trigger():
+async def trigger(
+    sync_service: Annotated[SyncService, Depends(get_sync_service)],
+):
     """Вызвать внеплановую синхронизацию данных."""
-    get_sync_service().trigger_job()
+    sync_service.trigger_job()
