@@ -4,9 +4,8 @@ from uuid import UUID
 
 from cashews import cache
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from fastapi_filter.contrib.sqlalchemy import Filter
 
-from app.api.filters import EventFilter
 from app.orm.models import Event
 from app.orm.uow import IUnitOfWork
 from app.services.events_provider import (
@@ -27,12 +26,12 @@ class EventsService:
         self._client = client
 
     async def get_paginated(
-        self, filter_: EventFilter, page: int, page_size: int | None
+        self, filter_: Filter, page: int, page_size: int | None
     ) -> tuple[list[Event], int]:
         """Получить погинированные события и общее количество.
 
         Аргументы:
-        - `filter_`: `EventFilter` - Фильтр событий.
+        - `filter_` - Фильтр событий.
         - `page` - Номер страницы.
         - `page_size` - Размер страницы.
 
@@ -41,25 +40,14 @@ class EventsService:
 
         """
         async with self._uow as uow:
-            stmt = select(Event)
-            stmt = filter_.filter(stmt)
-            events = await uow.events.get_paginated(
-                stmt.order_by(Event.event_time, Event.id),
-                page,
-                page_size,
-            )
-
-            stmt = select(func.count()).select_from(Event)
-            stmt = filter_.filter(stmt)
-            count = await uow.events.get_select_scalar(stmt)
-
+            events = await uow.events.get_paginated(page, page_size, filter_)
+            count = await uow.events.get_count(filter_)
         return events, count
 
     async def get_by_id(self, event_id: UUID) -> Event | None:
         """Получить событие по ID."""
         async with self._uow as uow:
-            stmt = select(Event).where(Event.id == event_id)
-            return await uow.events.get_select_scalar(stmt)
+            return await uow.events.get_by_id(event_id)
 
     @cache(ttl="30s", key="event_seats:{event_id}")
     async def get_seats(self, event_id: UUID) -> list[str]:

@@ -1,8 +1,10 @@
 """Репозиторий событий."""
 
 from typing import Any, Protocol
+from uuid import UUID
 
-from sqlalchemy import Select
+from fastapi_filter.contrib.sqlalchemy import Filter
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.orm.models import Event
@@ -13,23 +15,26 @@ class IEventRepository(Protocol):
     """Интерфейс репозитория событий."""
 
     async def get_paginated(
-        self, stmt: Select, page: int, page_size: int | None
+        self, page: int, page_size: int | None, filter_: Filter | None = None
     ) -> list[Event]:
         """Получить пагинированные события по запросу.
 
         Аргументы:
-        - `stmt`: Select - Обрабатываемый запрос на получение данных.
         - `page` - Номер страницы.
-        - `page_size`: int | None - Размер страницы;
+        - `page_size` - Размер страницы;
             при None пагинация не выполняется.
+        - `filter_` - Фильтр событий; по умолчанию None.
 
         Возвращает:
         - list[Event] - Список событий.
 
         """
 
-    async def get_select_scalar(self, stmt: Select) -> Any:
-        """Получить скалярное значение по select-запросу."""
+    async def get_by_id(self, event_id: UUID) -> Event | None:
+        """Получить событие по ID."""
+
+    async def get_count(self, filter_: Filter | None = None) -> int:
+        """Получить количество событий."""
 
     async def upsert(self, json_data_list: list[dict[str, Any]]):
         """Вставить или обновить записи при конфликте.
@@ -49,16 +54,28 @@ class EventRepository(BaseRepository, IEventRepository):
     """
 
     async def get_paginated(
-        self, stmt: Select, page: int, page_size: int | None
+        self, page: int, page_size: int | None, filter_: Filter | None = None
     ) -> list[Event]:
+        stmt = select(Event)
+        if filter_:
+            stmt = filter_.filter(stmt)
+        stmt = stmt.order_by(Event.event_time, Event.id)
         if page_size:
             stmt = stmt.offset((page - 1) * page_size).limit(page_size)
         result = await self._session.execute(stmt)
         return result.scalars().all()
 
-    async def get_select_scalar(self, stmt: Select) -> Any:
+    async def get_by_id(self, event_id: UUID) -> Event | None:
+        stmt = select(Event).where(Event.id == event_id)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_count(self, filter_: Filter | None = None) -> int:
+        stmt = select(func.count()).select_from(Event)
+        if filter_:
+            stmt = filter_.filter(stmt)
+        result = await self._session.execute(stmt)
+        return result.scalar_one()
 
     async def upsert(self, json_data_list: list[dict[str, Any]]):
         stmt = insert(Event).values(json_data_list)
