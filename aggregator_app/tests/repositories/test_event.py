@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.orm.models import EventStatus
 from app.orm.repositories.event import EventRepository, IEventRepository
-from tests.repositories.helpers import create_event, create_place, model_to_dict
+from tests.helpers import create_event, create_place, model_to_dict
 
 
 def _get_event_repository(session: AsyncSession) -> IEventRepository:

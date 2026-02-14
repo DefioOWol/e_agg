@@ -1,16 +1,17 @@
 """Тесты сервиса синхронизации."""
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from app.orm.models import SyncMeta, SyncStatus
 from app.services.sync import SyncService
-from tests.services.helpers import (
+from tests.helpers import (
     FakeEventsProviderClient,
     FakeSyncMetaRepository,
     FakeUnitOfWork,
+    get_datetime_now,
     get_raw_event,
 )
 
@@ -44,7 +45,7 @@ async def test_trigger_job(sync_service: SyncService, scheduler: MagicMock):
     assert scheduler.modify_job.called
     call_args = scheduler.modify_job.call_args
     assert call_args[0][0] == SyncService.SYNC_JOB_ID
-    assert call_args[1]["next_run_time"] <= datetime.now(UTC)
+    assert call_args[1]["next_run_time"] <= get_datetime_now()
 
 
 @pytest.mark.asyncio
@@ -90,7 +91,7 @@ async def test_sync_update_db(
 
     assert uow.sync_meta.meta.sync_status == SyncStatus.SYNCED
     assert uow.sync_meta.meta.last_changed_at == latest_changed_at
-    assert uow.sync_meta.meta.last_sync_time <= datetime.now(UTC)
+    assert uow.sync_meta.meta.last_sync_time <= get_datetime_now()
     assert set(uow.places.places.keys()) == places_ids
     assert set(uow.events.events.keys()) == events_ids
     assert uow.committed

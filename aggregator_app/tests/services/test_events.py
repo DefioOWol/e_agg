@@ -8,14 +8,12 @@ import pytest
 from fastapi import HTTPException, status
 
 from app.api.filters import EventFilter
-from app.orm.models import Event
 from app.services.events import EventsService
-from app.services.events_provider import EventsProviderParser
-from tests.services.helpers import (
+from tests.helpers import (
     FakeEventRepository,
     FakeEventsProviderClient,
     FakeUnitOfWork,
-    get_raw_event,
+    create_event,
 )
 
 
@@ -23,9 +21,8 @@ from tests.services.helpers import (
 async def test_get_paginated_events_and_count(
     events_service: EventsService, uow: FakeUnitOfWork
 ):
-    parser = EventsProviderParser()
-    event1 = Event(**parser.parse_event_dict(get_raw_event())[0])
-    event2 = Event(**parser.parse_event_dict(get_raw_event())[0])
+    event1 = create_event()
+    event2 = create_event()
     uow.events = FakeEventRepository({event1.id: event1, event2.id: event2})
 
     events, count = await events_service.get_paginated(EventFilter(), 1, None)
@@ -39,8 +36,7 @@ async def test_get_paginated_events_and_count(
 async def test_get_paginated_with_filter(
     events_service: EventsService, uow: FakeUnitOfWork
 ):
-    parser = EventsProviderParser()
-    event = Event(**parser.parse_event_dict(get_raw_event())[0])
+    event = create_event()
     uow.events = FakeEventRepository({event.id: event})
 
     filter_ = EventFilter(date_from=date.fromisoformat("2000-01-01"))
@@ -56,8 +52,7 @@ async def test_get_paginated_with_filter(
 
 @pytest.mark.asyncio
 async def test_get_by_id(events_service: EventsService, uow: FakeUnitOfWork):
-    parser = EventsProviderParser()
-    event = Event(**parser.parse_event_dict(get_raw_event())[0])
+    event = create_event()
     uow.events = FakeEventRepository({event.id: event})
     event_id = event.id
 

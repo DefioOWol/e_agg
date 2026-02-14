@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.orm.models import Place
 from app.orm.repositories.place import IPlaceRepository, PlaceRepository
-from tests.repositories.helpers import create_place, model_to_dict
+from tests.helpers import create_place, model_to_dict
 
 
 def _get_place_repository(session: AsyncSession) -> IPlaceRepository:

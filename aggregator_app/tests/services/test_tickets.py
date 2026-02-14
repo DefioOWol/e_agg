@@ -9,7 +9,7 @@ from aiohttp import ClientResponseError
 from fastapi import HTTPException, status
 
 from app.services.tickets import TicketsService
-from tests.services.helpers import (
+from tests.helpers import (
     FakeEventsProviderClient,
     FakeUnitOfWork,
     get_raw_member,

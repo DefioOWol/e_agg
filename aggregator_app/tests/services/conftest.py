@@ -8,7 +8,7 @@ from app.services.events import EventsService
 from app.services.events_provider import EventsPaginator, EventsProviderParser
 from app.services.sync import SyncService
 from app.services.tickets import TicketsService
-from tests.services.helpers import FakeEventsProviderClient, FakeUnitOfWork
+from tests.helpers import FakeEventsProviderClient, FakeUnitOfWork
 
 
 @pytest.fixture

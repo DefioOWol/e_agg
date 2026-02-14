@@ -13,7 +13,7 @@ from app.services.events_provider import (
     EventsProviderParser,
     IEventsProviderClient,
 )
-from tests.services.helpers import (
+from tests.helpers import (
     FakeEventsProviderClient,
     get_raw_event,
     get_raw_member,

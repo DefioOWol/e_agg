@@ -6,8 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from alembic import command
 from app.orm.db_manager import db_manager
-from tests.helpers import get_alembic_cfg
-from tests.repositories.helpers import create_event, create_place
+from tests.helpers import create_event, create_place, get_alembic_cfg
 
 
 @pytest.fixture(scope="module", autouse=True)
