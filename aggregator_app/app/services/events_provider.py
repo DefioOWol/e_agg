@@ -55,9 +55,6 @@ class IEventsProviderClient(
     @staticmethod
     def extract_cursor(response: dict[str, Any]) -> str | None:
         """Извлечь курсор из ответа."""
-        if (cursor := response.get("next")) is not None:
-            cursor = cursor.rsplit("cursor=", 1)[1]
-        return cursor
 
 
 class EventsProviderClient(IEventsProviderClient):
@@ -150,6 +147,13 @@ class EventsProviderClient(IEventsProviderClient):
     async def __aexit__(self, exc_type, exc, tb):
         await self._session.close()
         self._session = None
+
+    @staticmethod
+    def extract_cursor(response: dict[str, Any]) -> str | None:
+        """Извлечь курсор из ответа."""
+        if (cursor := response.get("next")) is not None:
+            cursor = cursor.rsplit("cursor=", 1)[1]
+        return cursor
 
 
 async def with_events_provider(
