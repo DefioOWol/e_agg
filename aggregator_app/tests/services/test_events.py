@@ -26,7 +26,7 @@ async def test_get_paginated_events_and_count(
     parser = EventsProviderParser()
     event1 = Event(**parser.parse_event_dict(get_raw_event())[0])
     event2 = Event(**parser.parse_event_dict(get_raw_event())[0])
-    uow.events = FakeEventRepository([event1, event2])
+    uow.events = FakeEventRepository({event1.id: event1, event2.id: event2})
 
     events, count = await events_service.get_paginated(EventFilter(), 1, None)
     assert len(events) == 2
@@ -41,7 +41,7 @@ async def test_get_paginated_with_filter(
 ):
     parser = EventsProviderParser()
     event = Event(**parser.parse_event_dict(get_raw_event())[0])
-    uow.events = FakeEventRepository([event])
+    uow.events = FakeEventRepository({event.id: event})
 
     filter_ = EventFilter(date_from=date.fromisoformat("2000-01-01"))
     events, count = await events_service.get_paginated(filter_, 1, None)
@@ -58,7 +58,7 @@ async def test_get_paginated_with_filter(
 async def test_get_by_id(events_service: EventsService, uow: FakeUnitOfWork):
     parser = EventsProviderParser()
     event = Event(**parser.parse_event_dict(get_raw_event())[0])
-    uow.events = FakeEventRepository([event])
+    uow.events = FakeEventRepository({event.id: event})
     event_id = event.id
 
     result = await events_service.get_by_id(event_id)

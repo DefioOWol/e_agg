@@ -4,7 +4,14 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.orm.models import EventStatus, Member, SyncMeta, SyncStatus
+from app.orm.models import (
+    Event,
+    EventStatus,
+    Member,
+    Place,
+    SyncMeta,
+    SyncStatus,
+)
 from app.orm.repositories.event import IEventRepository
 from app.orm.repositories.member import IMemberRepository
 from app.orm.repositories.place import IPlaceRepository
@@ -82,10 +89,10 @@ class FakeEventsProviderClient(IEventsProviderClient):
 
 class FakeEventRepository(IEventRepository):
     def __init__(self, events=None):
-        self.events = events or []
+        self.events = events or {}
 
     def _get_events(self, filter_):
-        events = self.events
+        events = list(self.events.values())
         if filter_ and filter_.event_time__gte:
             event_time = filter_.event_time__gte
             event_time = datetime(
@@ -100,15 +107,14 @@ class FakeEventRepository(IEventRepository):
         return self._get_events(filter_)
 
     async def get_by_id(self, event_id):
-        return next(
-            (event for event in self.events if event.id == event_id), None
-        )
+        return self.events.get(event_id)
 
     async def get_count(self, filter_=None):
         return len(self._get_events(filter_))
 
     async def upsert(self, json_data_list):
-        pass
+        for data in json_data_list:
+            self.events[data["id"]] = Event(**data)
 
 
 class FakeMemberRepository(IMemberRepository):
@@ -128,8 +134,11 @@ class FakeMemberRepository(IMemberRepository):
 
 
 class FakePlaceRepository(IPlaceRepository):
+    places = {}
+
     async def upsert(self, json_data_list):
-        pass
+        for data in json_data_list:
+            self.places[data["id"]] = Place(**data)
 
 
 class FakeSyncMetaRepository(ISyncMetaRepository):
