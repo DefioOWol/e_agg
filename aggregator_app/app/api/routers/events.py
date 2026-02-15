@@ -91,7 +91,6 @@ async def get_event(
     },
 )
 async def get_event_seats(
-    request: Request,
     event_id: UUID,
     events_service: Annotated[EventsService, Depends(get_events_service)],
 ):
