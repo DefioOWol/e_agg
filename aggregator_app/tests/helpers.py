@@ -1,7 +1,7 @@
 """Вспомогательные функции для тестов."""
 
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from alembic.config import Config
@@ -47,18 +47,28 @@ def create_place():
     return place
 
 
-def create_event(place: Place):
+def create_event(
+    place: Place | None = None,
+    status: EventStatus = EventStatus.NEW,
+    timedelta: timedelta | None = None,
+):
+    now = get_datetime_now()
+    if timedelta:
+        now += timedelta
+    place = place or create_place()
     event = Event(
         id=uuid4(),
         name="Test Event",
         place_id=place.id,
-        event_time=get_datetime_now(),
-        registration_deadline=get_datetime_now(),
-        status=EventStatus.NEW,
-        changed_at=get_datetime_now(),
-        created_at=get_datetime_now(),
-        status_changed_at=get_datetime_now(),
+        place=place,
+        event_time=now,
+        registration_deadline=now,
+        status=status,
+        changed_at=now,
+        created_at=now,
+        status_changed_at=now,
     )
+    event.number_of_visitors = 0
     return event
 
 
@@ -67,7 +77,7 @@ def model_to_dict(model: Base):
 
 
 def get_raw_iso_datetime_now():
-    return datetime.now(UTC).isoformat()
+    return get_datetime_now().isoformat()
 
 
 def get_raw_place():
@@ -150,7 +160,10 @@ class FakeEventRepository(IEventRepository):
         return events
 
     async def get_paginated(self, page, page_size, filter_=None):
-        return self._get_events(filter_)
+        events = self._get_events(filter_)
+        if page_size:
+            events = events[page_size * (page - 1) : page_size * page]
+        return events
 
     async def get_by_id(self, event_id):
         return self.events.get(event_id)
