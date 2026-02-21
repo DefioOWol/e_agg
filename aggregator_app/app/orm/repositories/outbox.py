@@ -4,17 +4,17 @@ from typing import Any, Protocol
 
 from sqlalchemy import select, update
 
-from app.orm.models import Outbox, OutboxStatus
+from app.orm.models import Outbox, OutboxStatus, OutboxType
 from app.orm.repositories.base import BaseRepository
 
 
 class IOutboxRepository(Protocol):
     """Интерфейс репозитория очереди событий."""
 
-    async def create(self, payload: dict[str, Any]) -> Outbox:
+    def create(self, type_: OutboxType, payload: dict[str, Any]) -> Outbox:
         """Создать событие в очереди."""
 
-    async def get_waiting(self) -> list[Outbox]:
+    async def get_waiting(self, *, for_update: bool = False) -> list[Outbox]:
         """Получить ожидающие события."""
 
     async def update_status(self, id: int, status: OutboxStatus) -> bool:
@@ -24,13 +24,15 @@ class IOutboxRepository(Protocol):
 class OutboxRepository(BaseRepository, IOutboxRepository):
     """Репозиторий очереди событий."""
 
-    async def create(self, payload: dict[str, Any]) -> Outbox:
-        outbox = Outbox(**payload)
+    def create(self, type_: OutboxType, payload: dict[str, Any]) -> Outbox:
+        outbox = Outbox(type=type_, payload=payload)
         self._session.add(outbox)
         return outbox
 
-    async def get_waiting(self) -> list[Outbox]:
+    async def get_waiting(self, *, for_update: bool = False) -> list[Outbox]:
         stmt = select(Outbox).where(Outbox.status == OutboxStatus.WAITING)
+        if for_update:
+            stmt = stmt.with_for_update()
         result = await self._session.execute(stmt)
         return result.scalars().all()
 
