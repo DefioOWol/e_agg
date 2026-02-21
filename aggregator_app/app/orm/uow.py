@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.orm.db_manager import DBManager
 from app.orm.repositories.event import EventRepository, IEventRepository
 from app.orm.repositories.member import IMemberRepository, MemberRepository
+from app.orm.repositories.outbox import IOutboxRepository, OutboxRepository
 from app.orm.repositories.place import IPlaceRepository, PlaceRepository
 from app.orm.repositories.sync_meta import (
     ISyncMetaRepository,
@@ -23,6 +24,7 @@ class IUnitOfWork(AbstractAsyncContextManager["IUnitOfWork"], Protocol):
     places: IPlaceRepository
     members: IMemberRepository
     sync_meta: ISyncMetaRepository
+    outbox: IOutboxRepository
 
     @asynccontextmanager
     async def begin(self) -> AsyncGenerator["IUnitOfWork", None]:
@@ -55,7 +57,7 @@ class SqlAlchemyUnitOfWork(IUnitOfWork):
         self.places = PlaceRepository(self._session)
         self.members = MemberRepository(self._session)
         self.sync_meta = SyncMetaRepository(self._session)
-
+        self.outbox = OutboxRepository(self._session)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
