@@ -2,7 +2,7 @@
 
 from collections.abc import AsyncGenerator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Protocol
+from typing import Protocol, Self
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +17,7 @@ from app.orm.repositories.sync_meta import (
 )
 
 
-class IUnitOfWork(AbstractAsyncContextManager["IUnitOfWork"], Protocol):
+class IUnitOfWork(AbstractAsyncContextManager[Self], Protocol):
     """Интерфейс Unit of Work."""
 
     events: IEventRepository
@@ -27,7 +27,7 @@ class IUnitOfWork(AbstractAsyncContextManager["IUnitOfWork"], Protocol):
     outbox: IOutboxRepository
 
     @asynccontextmanager
-    async def begin(self) -> AsyncGenerator["IUnitOfWork", None]:
+    async def begin(self) -> AsyncGenerator[Self, None]:
         """Начать транзакцию."""
 
     async def commit(self):
@@ -67,7 +67,7 @@ class SqlAlchemyUnitOfWork(IUnitOfWork):
         self._session_cm = self._session = None
 
     @asynccontextmanager
-    async def begin(self) -> AsyncGenerator["IUnitOfWork", None]:
+    async def begin(self) -> AsyncGenerator[Self, None]:
         if self._session is not None:
             async with self._session.begin():
                 yield self
