@@ -18,7 +18,6 @@ from app.services.events_provider import (
 )
 from app.services.utils import scheduler
 
-logging.basicConfig(level=logging.INFO, filename="app.log", filemode="w")
 logger = logging.getLogger(__name__)
 
 
