@@ -8,9 +8,7 @@ from fastapi_filter.contrib.sqlalchemy import Filter
 
 from app.orm.models import Event
 from app.orm.uow import IUnitOfWork
-from app.services.events_provider import (
-    IEventsProviderClient,
-)
+from app.services.events_provider import IEventsProviderClient
 from app.services.utils import with_external_client
 
 
