@@ -6,7 +6,7 @@ from uuid import UUID
 from aiohttp import ClientResponseError
 from fastapi import HTTPException, status
 
-from app.orm.models import Member
+from app.orm.models import Member, OutboxType
 from app.orm.uow import IUnitOfWork
 from app.services.events_provider import IEventsProviderClient
 from app.services.utils import with_external_client
@@ -80,8 +80,11 @@ class TicketsService:
         """Создать участника в локальной базе данных."""
         member_data.update({"event_id": event_id, "ticket_id": ticket_id})
         async with self._uow as uow:
-            await uow.members.create(member_data)
-            await uow.commit()
+            async with uow.begin():
+                await uow.members.create(member_data)
+                await uow.outbox.create(
+                    OutboxType.TICKET_REGISTER, member_data
+                )
         return ticket_id
 
     async def unregister(self, event_id: UUID, ticket_id: UUID):

@@ -2,7 +2,6 @@
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -40,12 +39,6 @@ class OutboxService:
 
         logger.info("Задача очереди событий добавлена в планировщик")
 
-    def create_event(
-        self, type_: OutboxType, payload: dict[str, Any]
-    ) -> Outbox:
-        """Создать событие в очереди."""
-        return self._uow.outbox.create(type_, payload)
-
     async def process_waiting(self):
         """Обработать ожидающие события."""
         logger.info("Обработка ожидающих событий")
@@ -81,8 +74,8 @@ class OutboxService:
         logger.exception("Ошибка при обработке события в очереди: %s", str(e))
 
 
-def get_outbox_service(uow: IUnitOfWork | None = None) -> OutboxService:
+def get_outbox_service() -> OutboxService:
     return OutboxService(
-        uow or SqlAlchemyUnitOfWork(db_manager),
+        SqlAlchemyUnitOfWork(db_manager),
         scheduler,
     )
