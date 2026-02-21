@@ -16,6 +16,7 @@ from app.services.events_provider import (
     IEventsProviderClient,
     with_events_provider,
 )
+from app.services.utils import scheduler
 
 logging.basicConfig(level=logging.INFO, filename="app.log", filemode="w")
 logger = logging.getLogger(__name__)
@@ -233,9 +234,6 @@ class SyncService:
         logger.info(
             "Статус синхронизации возвращен к '%s'", prev_sync_status.value
         )
-
-
-scheduler = AsyncIOScheduler(timezone=UTC)
 
 
 def get_sync_service() -> SyncService:
