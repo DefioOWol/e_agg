@@ -1,23 +1,20 @@
 """Модуль взаимодействия с EventsProviderAPI."""
 
-from collections.abc import Awaitable, Callable
-from contextlib import AbstractAsyncContextManager
 from datetime import UTC, date, datetime
 from typing import Any, Protocol
 from uuid import UUID
 
 import backoff
 from aiohttp import ClientSession, ClientTimeout
-from aiohttp.client_exceptions import ClientConnectionError, ClientResponseError
+from aiohttp.client_exceptions import ClientConnectionError
 from sqlalchemy import DateTime
 
 from app.config import settings
 from app.orm.models import Base, Event, EventStatus, Place
+from app.services.utils import IExternalClient
 
 
-class IEventsProviderClient(
-    AbstractAsyncContextManager["IEventsProviderClient"], Protocol
-):
+class IEventsProviderClient(IExternalClient, Protocol):
     """Интерфейс клиента для взаимодействия с EventsProviderAPI."""
 
     async def get_events(
@@ -135,49 +132,6 @@ class EventsProviderClient(IEventsProviderClient):
         if (cursor := response.get("next")) is not None:
             cursor = cursor.rsplit("cursor=", 1)[1]
         return cursor
-
-
-async def with_events_provider(
-    client: IEventsProviderClient,
-    func: Callable[..., Awaitable[Any]],
-    *,
-    func_kwargs: dict[str, Any] | None = None,
-    on_success: Callable[..., Awaitable[Any]] | None = None,
-    on_success_kwargs: dict[str, Any] | None = None,
-    on_error: Callable[..., Awaitable[Any]] | None = None,
-    on_error_kwargs: dict[str, Any] | None = None,
-) -> Any:
-    """Выполнить запрос с инициализацией сессии и обработкой ошибок.
-
-    Аргументы:
-    - `client` - Экземпляр клиента для взаимодействия.
-    - `func` - Функция для выполнения запроса;
-        первый аргумент - `IEventsProviderClient`.
-    - `func_kwargs` - Параметры для функции `func`; по умолчанию None.
-    - `on_success` - Функция для обработки успешного запроса;
-        первый аргумент - результат выполнения `func`; по умолчанию None.
-    - `on_success_kwargs` - Параметры для функции `on_success`;
-        по умолчанию None.
-    - `on_error` - Функция для обработки ошибки;
-        первый аргумент - ошибка; по умолчанию None.
-    - `on_error_kwargs` - Параметры для функции `on_error`;
-        по умолчанию None.
-
-    Возвращает:
-    - Результат выполнения функции `on_success` или `func`
-        если первая не задана.
-
-    """
-    try:
-        async with client:
-            result = await func(client, **(func_kwargs or {}))
-    except (TimeoutError, ClientConnectionError, ClientResponseError) as e:
-        if on_error is None:
-            raise
-        return await on_error(e, **(on_error_kwargs or {}))
-    if on_success is None:
-        return result
-    return await on_success(result, **(on_success_kwargs or {}))
 
 
 class EventsPaginator:

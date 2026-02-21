@@ -10,8 +10,8 @@ from app.orm.models import Event
 from app.orm.uow import IUnitOfWork
 from app.services.events_provider import (
     IEventsProviderClient,
-    with_events_provider,
 )
+from app.services.utils import with_external_client
 
 
 class EventsService:
@@ -56,7 +56,7 @@ class EventsService:
         Ответ кешируется на 30 секунд по ключу `event_seats:{event_id}`.
 
         """
-        return await with_events_provider(
+        return await with_external_client(
             self._client,
             self._fetch_seats,
             func_kwargs={"event_id": event_id},

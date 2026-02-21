@@ -14,9 +14,8 @@ from app.services.events_provider import (
     EventsProviderClient,
     EventsProviderParser,
     IEventsProviderClient,
-    with_events_provider,
 )
-from app.services.utils import scheduler
+from app.services.utils import scheduler, with_external_client
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,6 @@ class SyncService:
         paginator: EventsPaginator,
         parser: EventsProviderParser,
     ):
-        """Инициализировать сервис синхронизации."""
         self._uow = uow
         self._scheduler = scheduler
         self._client = client
@@ -130,7 +128,7 @@ class SyncService:
             sync_meta.sync_status.value,
         )
 
-        await with_events_provider(
+        await with_external_client(
             self._client,
             self._run_fetch,
             func_kwargs={"sync_meta": sync_meta},

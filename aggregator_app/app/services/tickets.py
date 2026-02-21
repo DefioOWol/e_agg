@@ -8,10 +8,8 @@ from fastapi import HTTPException, status
 
 from app.orm.models import Member
 from app.orm.uow import IUnitOfWork
-from app.services.events_provider import (
-    IEventsProviderClient,
-    with_events_provider,
-)
+from app.services.events_provider import IEventsProviderClient
+from app.services.utils import with_external_client
 
 
 class TicketsService:
@@ -54,7 +52,7 @@ class TicketsService:
         - UUID билета участника.
 
         """
-        return await with_events_provider(
+        return await with_external_client(
             self._client,
             self._register_member,
             func_kwargs={"event_id": event_id, "member_data": member_data},
@@ -88,7 +86,7 @@ class TicketsService:
 
     async def unregister(self, event_id: UUID, ticket_id: UUID):
         """Отменить регистрацию участника на событие."""
-        await with_events_provider(
+        await with_external_client(
             self._client,
             self._unregister_member,
             func_kwargs={"event_id": event_id, "ticket_id": ticket_id},
