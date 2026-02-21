@@ -20,8 +20,6 @@ class IEventsProviderClient(
 ):
     """Интерфейс клиента для взаимодействия с EventsProviderAPI."""
 
-    BASE_URL = "http://events-provider.dev-1.python-labs.ru"
-
     async def get_events(
         self, changed_at: date, cursor: str | None = None
     ) -> dict[str, Any]:
@@ -66,7 +64,7 @@ class EventsProviderClient(IEventsProviderClient):
 
     _BACKOFF_ON_EXCEPTION = backoff.on_exception(
         backoff.expo,
-        (TimeoutError, ClientConnectionError, ClientResponseError),
+        (TimeoutError, ClientConnectionError),
         max_tries=3,
     )
 
@@ -89,13 +87,6 @@ class EventsProviderClient(IEventsProviderClient):
     async def get_events(
         self, changed_at: date, cursor: str | None = None
     ) -> dict[str, Any]:
-        """Получить события.
-
-        Аргументы:
-        - `changed_at` - Дата последнего изменения в ISO формате.
-        - `cursor` - Курсор пагинации; по умолчанию None.
-
-        """
         url = f"/api/events/?changed_at={changed_at.isoformat()}"
         if cursor:
             url += f"&cursor={cursor}"
@@ -104,7 +95,6 @@ class EventsProviderClient(IEventsProviderClient):
 
     @_BACKOFF_ON_EXCEPTION
     async def get_seats(self, event_id: UUID) -> dict[str, Any]:
-        """Получить свободные места на событии."""
         url = f"/api/events/{event_id}/seats/"
         async with self._session.get(url) as response:
             return await response.json()
@@ -113,13 +103,6 @@ class EventsProviderClient(IEventsProviderClient):
     async def register_member(
         self, event_id: UUID, member_data: dict[str, Any]
     ) -> dict[str, Any]:
-        """Зарегистрировать участника на событие.
-
-        Аргументы:
-        - `event_id` - UUID события.
-        - `member_data` - Данные участника.
-
-        """
         url = f"/api/events/{event_id}/register/"
         async with self._session.post(url, json=member_data) as response:
             return await response.json()
@@ -128,7 +111,6 @@ class EventsProviderClient(IEventsProviderClient):
     async def unregister_member(
         self, event_id: UUID, ticket_id: UUID
     ) -> dict[str, Any]:
-        """Отменить регистрацию участника на событие."""
         url = f"/api/events/{event_id}/unregister/"
         async with self._session.delete(
             url, json={"ticket_id": str(ticket_id)}
@@ -137,7 +119,7 @@ class EventsProviderClient(IEventsProviderClient):
 
     async def __aenter__(self):
         self._session = ClientSession(
-            self.BASE_URL,
+            settings.events_provider_base_url,
             headers={"x-api-key": settings.lms_api_key.get_secret_value()},
             timeout=self._timeout,
             raise_for_status=True,
@@ -150,7 +132,6 @@ class EventsProviderClient(IEventsProviderClient):
 
     @staticmethod
     def extract_cursor(response: dict[str, Any]) -> str | None:
-        """Извлечь курсор из ответа."""
         if (cursor := response.get("next")) is not None:
             cursor = cursor.rsplit("cursor=", 1)[1]
         return cursor
