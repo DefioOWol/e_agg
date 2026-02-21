@@ -9,8 +9,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.orm.models.base import Base
 
 
+class OutboxType(PyEnum):
+    """Тип события."""
+
+    TICKET_REGISTER = "ticket.register"
+
+
 class OutboxStatus(PyEnum):
-    """Статус отправки."""
+    """Статус обработки."""
 
     WAITING = "waiting"
     SENT = "sent"
@@ -23,6 +29,7 @@ class Outbox(Base):
 
     Атрибуты:
     - `id` - идентификатор; первичный ключ.
+    - `type`: `OutboxType` - тип события; не может быть пустым.
     - `payload` - JSON-данные; не может быть пустым.
     - `status`: `OutboxStatus` - статус отправки; не может быть пустым;
         по умолчанию 'waiting'.
@@ -36,6 +43,7 @@ class Outbox(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True, nullable=False
     )
+    type: Mapped[OutboxType] = mapped_column(Enum(OutboxType), nullable=False)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     status: Mapped[OutboxStatus] = mapped_column(
         Enum(OutboxStatus),
