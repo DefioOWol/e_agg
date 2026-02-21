@@ -24,6 +24,8 @@ services:
       POSTGRES_HOST: ${DB_TEST_CONTAINER_NAME:-db_test}
       POSTGRES_PORT: 5432
       LMS_API_KEY: ${LMS_API_KEY:?}
+      EVENTS_PROVIDER_BASE_URL: ${EVENTS_PROVIDER_BASE_URL:?}
+      CAPASHINO_BASE_URL: ${CAPASHINO_BASE_URL:?}
     depends_on:
       db_test:
         condition: service_healthy
