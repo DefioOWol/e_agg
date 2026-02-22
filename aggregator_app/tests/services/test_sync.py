@@ -61,7 +61,7 @@ async def test_sync_skips_if_pending(
 @pytest.mark.asyncio
 async def test_sync_update_db(
     sync_service: SyncService,
-    client: FakeEventsProviderClient,
+    events_provider_client: FakeEventsProviderClient,
     uow: FakeUnitOfWork,
 ):
     events = []
@@ -79,7 +79,7 @@ async def test_sync_update_db(
             datetime.fromisoformat(event["changed_at"]).date(),
         )
 
-    client.kwargs["pages"] = {
+    events_provider_client.kwargs["pages"] = {
         None: {"next": "abc123", "results": events[:2]},
         "abc123": {
             "next": None,

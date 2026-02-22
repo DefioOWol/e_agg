@@ -12,12 +12,15 @@ from app.orm.models import (
     Event,
     EventStatus,
     Member,
+    Outbox,
+    OutboxStatus,
     Place,
     SyncMeta,
     SyncStatus,
 )
 from app.orm.repositories.event import IEventRepository
 from app.orm.repositories.member import IMemberRepository
+from app.orm.repositories.outbox import IOutboxRepository
 from app.orm.repositories.place import IPlaceRepository
 from app.orm.repositories.sync_meta import ISyncMetaRepository
 from app.orm.uow import IUnitOfWork
@@ -180,7 +183,7 @@ class FakeMemberRepository(IMemberRepository):
     def __init__(self, members=None):
         self.members = members or {}
 
-    async def create(self, json_data):
+    def create(self, json_data):
         member = Member(**json_data)
         self.members[member.ticket_id] = member
         return member
@@ -211,12 +214,40 @@ class FakeSyncMetaRepository(ISyncMetaRepository):
         return self.meta, False
 
 
+class FakeOutboxRepository(IOutboxRepository):
+    def __init__(self, outbox=None):
+        self.outbox = outbox or {}
+
+    def create(self, type_, payload):
+        outbox = Outbox(
+            id=len(self.outbox) + 1,
+            type=type_,
+            payload=payload,
+            status=OutboxStatus.WAITING,
+            created_at=get_datetime_now(),
+        )
+        self.outbox[outbox.id] = outbox
+        return outbox
+
+    async def get_waiting(self, *, for_update=False):
+        return list(
+            v for v in self.outbox.values() if v.status == OutboxStatus.WAITING
+        )
+
+    async def update_status(self, id, status):
+        if id not in self.outbox:
+            return False
+        self.outbox[id].status = status
+        return True
+
+
 class FakeUnitOfWork(IUnitOfWork):
     def __init__(self):
         self.events = FakeEventRepository()
         self.members = FakeMemberRepository()
         self.places = FakePlaceRepository()
         self.sync_meta = FakeSyncMetaRepository()
+        self.outbox = FakeOutboxRepository()
 
         self._began = False
         self.committed = False

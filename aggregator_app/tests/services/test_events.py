@@ -69,9 +69,10 @@ async def test_get_by_id_not_found(events_service: EventsService):
 
 @pytest.mark.asyncio
 async def test_get_seats(
-    events_service: EventsService, client: FakeEventsProviderClient
+    events_service: EventsService,
+    events_provider_client: FakeEventsProviderClient,
 ):
-    client.kwargs["seats"] = {"seats": ["A1", "A2", "A3"]}
+    events_provider_client.kwargs["seats"] = {"seats": ["A1", "A2", "A3"]}
     seats = await events_service.get_seats(uuid4())
     assert seats == ["A1", "A2", "A3"]
 

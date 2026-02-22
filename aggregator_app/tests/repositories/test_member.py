@@ -13,10 +13,8 @@ def _get_member_repository(session: AsyncSession) -> IMemberRepository:
     return MemberRepository(session)
 
 
-async def _create_member(
-    repo: IMemberRepository, ticket_id: UUID, event: Event
-):
-    return await repo.create(
+def _create_member(repo: IMemberRepository, ticket_id: UUID, event: Event):
+    return repo.create(
         {
             "ticket_id": ticket_id,
             "first_name": "Иван",
@@ -32,7 +30,7 @@ async def _create_member(
 async def test_create_and_get_by_id(session: AsyncSession, event: Event):
     repo = _get_member_repository(session)
     ticket_id = uuid4()
-    await _create_member(repo, ticket_id, event)
+    _create_member(repo, ticket_id, event)
     await session.flush()
 
     member = await repo.get_by_id(ticket_id, load_event=False)
@@ -52,7 +50,7 @@ async def test_get_by_id_not_found(session: AsyncSession):
 async def test_get_by_id_with_load_event(session: AsyncSession, event: Event):
     repo = _get_member_repository(session)
     ticket_id = uuid4()
-    await _create_member(repo, ticket_id, event)
+    _create_member(repo, ticket_id, event)
     await session.flush()
 
     member = await repo.get_by_id(ticket_id, load_event=True)
@@ -65,7 +63,7 @@ async def test_get_by_id_with_load_event(session: AsyncSession, event: Event):
 async def test_delete(session: AsyncSession, event: Event):
     repo = _get_member_repository(session)
     ticket_id = uuid4()
-    await _create_member(repo, ticket_id, event)
+    _create_member(repo, ticket_id, event)
     await session.flush()
 
     deleted = await repo.delete(ticket_id)

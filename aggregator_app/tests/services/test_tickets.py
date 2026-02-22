@@ -8,24 +8,26 @@ import pytest
 from aiohttp import ClientResponseError
 from fastapi import HTTPException, status
 
+from app.orm.models import OutboxStatus, OutboxType
 from app.services.tickets import TicketsService
 from tests.helpers import (
     FakeEventsProviderClient,
     FakeUnitOfWork,
+    get_datetime_now,
     get_raw_member,
 )
 
 
 @pytest.mark.asyncio
 async def test_register_member(
-    uow: FakeUnitOfWork, client: FakeEventsProviderClient
+    uow: FakeUnitOfWork, events_provider_client: FakeEventsProviderClient
 ):
     event_id = uuid4()
     member_data = get_raw_member()
     ticket_id = str(uuid4())
 
-    client.kwargs["ticket_id"] = {"ticket_id": ticket_id}
-    service = TicketsService(uow, client)
+    events_provider_client.kwargs["ticket_id"] = {"ticket_id": ticket_id}
+    service = TicketsService(uow, events_provider_client)
 
     result_ticket_id = await service.register(event_id, member_data)
 
@@ -38,17 +40,40 @@ async def test_register_member(
 
 
 @pytest.mark.asyncio
+async def test_register_member_with_outbox(
+    uow: FakeUnitOfWork, events_provider_client: FakeEventsProviderClient
+):
+    event_id = uuid4()
+    member_data = get_raw_member()
+    ticket_id = str(uuid4())
+
+    events_provider_client.kwargs["ticket_id"] = {"ticket_id": ticket_id}
+    service = TicketsService(uow, events_provider_client)
+    await service.register(event_id, member_data)
+
+    assert len(uow.outbox.outbox) == 1
+    assert uow.outbox.outbox[1].type == OutboxType.TICKET_REGISTER
+    assert uow.outbox.outbox[1].payload == member_data | {
+        "event_id": event_id,
+        "ticket_id": ticket_id,
+    }
+    assert uow.outbox.outbox[1].status == OutboxStatus.WAITING
+    assert uow.outbox.outbox[1].created_at <= get_datetime_now()
+    assert uow.committed
+
+
+@pytest.mark.asyncio
 async def test_unregister_member(
-    uow: FakeUnitOfWork, client: FakeEventsProviderClient
+    uow: FakeUnitOfWork, events_provider_client: FakeEventsProviderClient
 ):
     event_id = uuid4()
     ticket_id = uuid4()
 
     member_data = get_raw_member()
     member_data.update({"event_id": event_id, "ticket_id": ticket_id})
-    await uow.members.create(member_data)
+    uow.members.create(member_data)
 
-    service = TicketsService(uow, client)
+    service = TicketsService(uow, events_provider_client)
     await service.unregister(event_id, ticket_id)
 
     assert ticket_id not in uow.members.members
@@ -61,7 +86,7 @@ async def test_get_by_id(tickets_service: TicketsService, uow: FakeUnitOfWork):
 
     member_data = get_raw_member()
     member_data.update({"event_id": uuid4(), "ticket_id": ticket_id})
-    await uow.members.create(member_data)
+    uow.members.create(member_data)
 
     member = await tickets_service.get_by_id(ticket_id)
 
