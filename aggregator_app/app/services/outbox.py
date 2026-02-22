@@ -62,7 +62,7 @@ class OutboxService:
 
     async def _process_ticket_register(self, client, item: Outbox):
         """Обработать событие регистрации билета."""
-        pass
+        raise TimeoutError
 
     async def _update_status(self, _: None, uow: IUnitOfWork, item: Outbox):
         """Обновить статус события в очереди на отправленное."""
