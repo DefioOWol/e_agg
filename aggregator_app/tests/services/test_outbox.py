@@ -28,7 +28,7 @@ async def test_process_waiting_update_status(
     outbox_service: OutboxService, uow: FakeUnitOfWork
 ):
     item = uow.outbox.create(OutboxType.TICKET_REGISTER, {"ticket_id": "123"})
-    outbox_service._process_ticket_register = AsyncMock(return_value=None)
+    outbox_service._process_notify = AsyncMock(return_value=None)
     await outbox_service.process_waiting()
     assert uow.outbox.outbox[item.id].status == OutboxStatus.SENT
     assert uow.committed
@@ -39,9 +39,21 @@ async def test_process_waiting_handle_error(
     outbox_service: OutboxService, uow: FakeUnitOfWork
 ):
     item = uow.outbox.create(OutboxType.TICKET_REGISTER, {"ticket_id": "123"})
-    outbox_service._process_ticket_register = AsyncMock(
+    outbox_service._process_notify = AsyncMock(
         side_effect=TimeoutError
     )
     await outbox_service.process_waiting()
     assert uow.outbox.outbox[item.id].status == OutboxStatus.WAITING
     assert not uow.committed
+
+
+@pytest.mark.asyncio
+async def test_process_waiting_call_notify(
+    outbox_service: OutboxService, uow: FakeUnitOfWork
+):
+    item = uow.outbox.create(OutboxType.TICKET_REGISTER, {"ticket_id": "123"})
+    client = MagicMock()
+    outbox_service._client = client
+    await outbox_service.process_waiting()
+    assert client.notify.called
+    assert client.notify.call_args[0][0] == item
