@@ -16,6 +16,7 @@ class EventStatus(PyEnum):
 
     NEW = "new"
     PUBLISHED = "published"
+    OTHER = "other"
 
 
 class Event(Base):

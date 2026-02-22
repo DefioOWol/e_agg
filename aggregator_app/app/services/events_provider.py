@@ -205,7 +205,10 @@ class EventsProviderParser:
     def _prepare_event(self, event_data: dict[str, Any]):
         """Подготовить данные события."""
         del event_data["number_of_visitors"]
-        event_data["status"] = EventStatus(event_data["status"])
+        try:
+            event_data["status"] = EventStatus(event_data["status"])
+        except ValueError:
+            event_data["status"] = EventStatus.OTHER
         self._convert_datetime(event_data, Event)
 
     def _prepare_place(self, place_data: dict[str, Any]):

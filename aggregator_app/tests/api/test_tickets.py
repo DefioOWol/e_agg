@@ -47,11 +47,12 @@ async def test_register_event_not_found(client: AsyncClient):
     assert response.json()["detail"] == "Event not found"
 
 
+@pytest.mark.parametrize("event_status", [EventStatus.NEW, EventStatus.OTHER])
 @pytest.mark.asyncio
 async def test_register_event_not_published(
-    client: AsyncClient, uow: FakeUnitOfWork
+    event_status: EventStatus, client: AsyncClient, uow: FakeUnitOfWork
 ):
-    event = create_event(status=EventStatus.NEW, timedelta=timedelta(hours=1))
+    event = create_event(status=event_status, timedelta=timedelta(hours=1))
     uow.events.events = {event.id: event}
     member_data = get_raw_member() | {"event_id": str(event.id)}
     response = await client.post("/tickets", json=member_data)

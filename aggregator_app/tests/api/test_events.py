@@ -120,11 +120,12 @@ async def test_get_event_seats_event_not_found(client: AsyncClient):
     assert response.json()["detail"] == "Event not found"
 
 
+@pytest.mark.parametrize("event_status", [EventStatus.NEW, EventStatus.OTHER])
 @pytest.mark.asyncio
 async def test_get_event_seats_event_not_published(
-    client: AsyncClient, uow: FakeUnitOfWork
+    event_status: EventStatus, client: AsyncClient, uow: FakeUnitOfWork
 ):
-    event = create_event(status=EventStatus.NEW)
+    event = create_event(status=event_status)
     uow.events.events = {event.id: event}
     response = await client.get(f"/events/{event.id}/seats")
     assert response.status_code == status.HTTP_400_BAD_REQUEST

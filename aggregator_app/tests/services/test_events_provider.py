@@ -202,3 +202,10 @@ def test_events_provider_parser():
         for key in keys:
             assert isinstance(data_dict[key], datetime)
             assert data_dict[key].tzinfo is UTC
+
+
+def test_events_provider_parser_invalid_status():
+    raw_event = get_raw_event()
+    raw_event["status"] = "invalid"
+    event_dict, _ = EventsProviderParser().parse_event_dict(raw_event)
+    assert event_dict["status"] == EventStatus.OTHER

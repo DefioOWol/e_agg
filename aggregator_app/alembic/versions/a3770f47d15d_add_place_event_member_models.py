@@ -44,7 +44,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "status",
-            sa.Enum("NEW", "PUBLISHED", name="eventstatus"),
+            sa.Enum("NEW", "PUBLISHED", "OTHER", name="eventstatus"),
             nullable=False,
         ),
         sa.Column("changed_at", sa.DateTime(timezone=True), nullable=False),
