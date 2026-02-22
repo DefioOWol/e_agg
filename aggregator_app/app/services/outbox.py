@@ -2,14 +2,18 @@
 
 import logging
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.orm.db_manager import db_manager
-from app.orm.models import Outbox, OutboxStatus, OutboxType
+from app.orm.models import Outbox, OutboxStatus
 from app.orm.uow import IUnitOfWork, SqlAlchemyUnitOfWork
+from app.services.capashino_notification import (
+    CapashinoNotificationClient,
+    INotificationClient,
+)
 from app.services.utils import scheduler, with_external_client
 
 logger = logging.getLogger(__name__)
@@ -21,7 +25,12 @@ class OutboxService:
     OUTBOX_JOB_ID = "outbox-job"
     OUTBOX_JOB_TRIGGER = IntervalTrigger(hours=1)
 
-    def __init__(self, uow: IUnitOfWork, scheduler: AsyncIOScheduler, client):
+    def __init__(
+        self,
+        uow: IUnitOfWork,
+        scheduler: AsyncIOScheduler,
+        client: INotificationClient,
+    ):
         self._uow = uow
         self._scheduler = scheduler
         self._client = client
@@ -44,40 +53,49 @@ class OutboxService:
         """Обработать ожидающие события."""
         logger.info("Обработка ожидающих событий")
 
+        successful_processed = 0
         async with self._uow as uow:
             outbox = await uow.outbox.get_waiting(for_update=True)
 
             for item in outbox:
-                match item.type:
-                    case OutboxType.TICKET_REGISTER:
-                        await with_external_client(
-                            self._client,
-                            self._process_ticket_register,
-                            func_kwargs={"item": item},
-                            on_success=self._update_status,
-                            on_success_kwargs={"uow": uow, "item": item},
-                            on_error=self._handle_error,
-                        )
+                successful_processed += await with_external_client(
+                    self._client,
+                    self._process_notify,
+                    func_kwargs={"item": item},
+                    on_success=self._update_status,
+                    on_success_kwargs={"uow": uow, "item": item},
+                    on_error=self._handle_error,
+                )
 
-        logger.info("Обработка ожидающих событий завершена")
+        logger.info(
+            "Успешно обработано %d/%d ожидающих событий",
+            successful_processed,
+            len(outbox),
+        )
 
-    async def _process_ticket_register(self, client, item: Outbox):
+    async def _process_notify(
+        self, client: INotificationClient, item: Outbox
+    ) -> dict[str, Any]:
         """Обработать событие регистрации билета."""
-        raise TimeoutError
+        return await client.notify(item)
 
-    async def _update_status(self, _: None, uow: IUnitOfWork, item: Outbox):
+    async def _update_status(
+        self, _: None, uow: IUnitOfWork, item: Outbox
+    ) -> bool:
         """Обновить статус события в очереди на отправленное."""
         await uow.outbox.update_status(item.id, OutboxStatus.SENT)
         await uow.commit()
+        return True
 
-    async def _handle_error(self, e: Exception):
+    async def _handle_error(self, e: Exception) -> bool:
         """Обработать ошибку внешнего API."""
         logger.exception("Ошибка при обработке события в очереди: %s", str(e))
+        return False
 
 
 def get_outbox_service() -> OutboxService:
     return OutboxService(
         SqlAlchemyUnitOfWork(db_manager),
         scheduler,
-        MagicMock(),
+        CapashinoNotificationClient(),
     )
