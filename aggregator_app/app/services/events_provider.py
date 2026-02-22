@@ -65,14 +65,14 @@ class EventsProviderClient(IEventsProviderClient):
         max_tries=3,
     )
 
-    def __init__(self, total_timeout: int = 10, connect_timeout: int = 5):
+    def __init__(self, total_timeout: int = 60, connect_timeout: int = 15):
         """Инициализировать клиент.
 
         Аргументы:
         - `total_timeout` - Максимальное время ожидания всего запроса;
-            по умолчанию 10 секунд.
+            по умолчанию 60 секунд.
         - `connect_timeout` - Максимальное время ожидания соединения;
-            по умолчанию 5 секунд.
+            по умолчанию 15 секунд.
 
         """
         self._timeout = ClientTimeout(
