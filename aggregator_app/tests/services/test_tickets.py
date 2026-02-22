@@ -35,7 +35,7 @@ async def test_register_member(
     assert ticket_id in uow.members.members
 
     member = uow.members.members[ticket_id]
-    assert member.event_id == event_id
+    assert member.event_id == str(event_id)
     assert uow.committed
 
 
@@ -54,7 +54,7 @@ async def test_register_member_with_outbox(
     assert len(uow.outbox.outbox) == 1
     assert uow.outbox.outbox[1].type == OutboxType.TICKET_REGISTER
     assert uow.outbox.outbox[1].payload == member_data | {
-        "event_id": event_id,
+        "event_id": str(event_id),
         "ticket_id": ticket_id,
     }
     assert uow.outbox.outbox[1].status == OutboxStatus.WAITING

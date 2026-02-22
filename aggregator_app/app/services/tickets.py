@@ -78,7 +78,7 @@ class TicketsService:
         self, ticket_id: str, event_id: UUID, member_data: dict[str, Any]
     ) -> str:
         """Создать участника в локальной базе данных."""
-        member_data.update({"event_id": event_id, "ticket_id": ticket_id})
+        member_data.update({"ticket_id": ticket_id, "event_id": str(event_id)})
         async with self._uow as uow:
             async with uow.begin():
                 uow.members.create(member_data)
