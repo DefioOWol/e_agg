@@ -53,6 +53,4 @@ def sync_service(uow, scheduler, events_provider_client):
 
 @pytest.fixture
 def outbox_service(uow, scheduler):
-    outbox_service = OutboxService(uow, scheduler)
-    outbox_service._client = MagicMock()
-    return outbox_service
+    return OutboxService(uow, scheduler, MagicMock())

@@ -2,6 +2,7 @@
 
 import logging
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -20,10 +21,10 @@ class OutboxService:
     OUTBOX_JOB_ID = "outbox-job"
     OUTBOX_JOB_TRIGGER = IntervalTrigger(hours=1)
 
-    def __init__(self, uow: IUnitOfWork, scheduler: AsyncIOScheduler):
+    def __init__(self, uow: IUnitOfWork, scheduler: AsyncIOScheduler, client):
         self._uow = uow
         self._scheduler = scheduler
-        self._client = None
+        self._client = client
 
     def init_job(self):
         """Инициализировать задачу очереди событий."""
@@ -78,4 +79,5 @@ def get_outbox_service() -> OutboxService:
     return OutboxService(
         SqlAlchemyUnitOfWork(db_manager),
         scheduler,
+        MagicMock(),
     )
