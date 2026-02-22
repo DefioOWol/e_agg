@@ -81,8 +81,8 @@ class TicketsService:
         member_data.update({"event_id": event_id, "ticket_id": ticket_id})
         async with self._uow as uow:
             async with uow.begin():
-                await uow.members.create(member_data)
-                await uow.outbox.create(OutboxType.TICKET_REGISTER, member_data)
+                uow.members.create(member_data)
+                uow.outbox.create(OutboxType.TICKET_REGISTER, member_data)
         return ticket_id
 
     async def unregister(self, event_id: UUID, ticket_id: UUID):

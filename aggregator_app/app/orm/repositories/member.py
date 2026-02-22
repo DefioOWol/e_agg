@@ -13,7 +13,7 @@ from app.orm.repositories.base import BaseRepository
 class IMemberRepository(Protocol):
     """Интерфейс репозитория участника."""
 
-    async def create(self, json_data: dict[str, Any]) -> Member:
+    def create(self, json_data: dict[str, Any]) -> Member:
         """Создать участника.
 
         Данные словаря должны соответствовать полям модели `Member`
@@ -46,7 +46,7 @@ class MemberRepository(BaseRepository, IMemberRepository):
 
     """
 
-    async def create(self, json_data: dict[str, Any]) -> Member:
+    def create(self, json_data: dict[str, Any]) -> Member:
         member = Member(**json_data)
         self._session.add(member)
         return member
