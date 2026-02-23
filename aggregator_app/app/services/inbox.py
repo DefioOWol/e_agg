@@ -50,7 +50,7 @@ class InboxService:
 
         async with self._uow as uow:
             deleted_count = await uow.inbox.delete_expired()
-            uow.commit()
+            await uow.commit()
 
         logger.info("Удалено %d ключей", deleted_count)
 
@@ -64,7 +64,7 @@ class InboxService:
     ) -> tuple[str, bool]:
         """Проверить конфликт request_hash и хэша данных data."""
         hashed = hash_dict(data)
-        return hashed, hashed == request_hash
+        return hashed, hashed != request_hash
 
 
 def get_inbox_service() -> InboxService:
