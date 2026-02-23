@@ -78,5 +78,8 @@ jobs:
           LMS_API_KEY: ${{ secrets.LMS_API_KEY }}
           EVENTS_PROVIDER_BASE_URL: ${{ secrets.EVENTS_PROVIDER_BASE_URL }}
           CAPASHINO_BASE_URL: ${{ secrets.CAPASHINO_BASE_URL }}
+          OUTBOX_SECONDS_INTERVAL: 3600
+          INBOX_SECONDS_TTL: 3600
+          INBOX_SECONDS_INTERVAL: 3600
         run: uv run pytest -v
         working-directory: aggregator_app
