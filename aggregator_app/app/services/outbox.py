@@ -11,7 +11,7 @@ from app.config import settings
 from app.orm.db_manager import db_manager
 from app.orm.models import Outbox, OutboxStatus
 from app.orm.uow import IUnitOfWork, SqlAlchemyUnitOfWork
-from app.services.capashino_notification import (
+from app.services.notification import (
     CapashinoNotificationClient,
     INotificationClient,
 )
