@@ -24,9 +24,12 @@ async def lifespan(app: FastAPI):
 
     """
     await db_manager.init()
-    await get_sync_service().init_job()
-    get_outbox_service().init_job()
+
+    scheduler_initable = (get_sync_service(), get_outbox_service())
+    for initable in scheduler_initable:
+        await initable.init_jobs()
     scheduler.start()
+
     cache.setup("mem://")
     yield
     scheduler.shutdown()

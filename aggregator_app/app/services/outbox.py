@@ -38,7 +38,7 @@ class OutboxService:
         self._scheduler = scheduler
         self._client = client
 
-    def init_job(self):
+    async def init_jobs(self):
         """Инициализировать задачу очереди событий."""
         logger.info("Инициализация задачи очереди событий")
 

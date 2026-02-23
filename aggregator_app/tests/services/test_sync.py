@@ -20,7 +20,7 @@ from tests.helpers import (
 async def test_init_job(
     sync_service: SyncService, uow: FakeUnitOfWork, scheduler: MagicMock
 ):
-    await sync_service.init_job()
+    await sync_service.init_jobs()
     assert uow.sync_meta.meta is not None
     assert uow.sync_meta.meta.sync_status == SyncStatus.NEVER
     assert scheduler.add_job.called
@@ -33,7 +33,7 @@ async def test_init_job_fix_pending_status(
     meta = SyncMeta(id=1, sync_status=SyncStatus.PENDING)
     uow.sync_meta = FakeSyncMetaRepository(meta=meta)
 
-    await sync_service.init_job()
+    await sync_service.init_jobs()
 
     assert uow.sync_meta.meta.sync_status != SyncStatus.PENDING
     assert uow.committed

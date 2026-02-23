@@ -9,8 +9,9 @@ from app.services.outbox import OutboxService
 from tests.helpers import FakeUnitOfWork
 
 
-def test_init_job(outbox_service: OutboxService, scheduler: MagicMock):
-    outbox_service.init_job()
+@pytest.mark.asyncio
+async def test_init_job(outbox_service: OutboxService, scheduler: MagicMock):
+    await outbox_service.init_jobs()
     assert scheduler.add_job.called
 
 
@@ -39,9 +40,7 @@ async def test_process_waiting_handle_error(
     outbox_service: OutboxService, uow: FakeUnitOfWork
 ):
     item = uow.outbox.create(OutboxType.TICKET_REGISTER, {"ticket_id": "123"})
-    outbox_service._process_notify = AsyncMock(
-        side_effect=TimeoutError
-    )
+    outbox_service._process_notify = AsyncMock(side_effect=TimeoutError)
     await outbox_service.process_waiting()
     assert uow.outbox.outbox[item.id].status == OutboxStatus.WAITING
     assert not uow.committed

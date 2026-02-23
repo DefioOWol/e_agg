@@ -11,6 +11,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 scheduler = AsyncIOScheduler(timezone=UTC)
 
 
+class SchedulerInitable(Protocol):
+    """Интерфейс класса, который может инициализировать задачи в scheduler."""
+
+    async def init_jobs(self):
+        pass
+
+
 class IExternalClient(AbstractAsyncContextManager[Self], Protocol):
     """Интерфейс клиента для взаимодействия с внешними сервисами."""
 

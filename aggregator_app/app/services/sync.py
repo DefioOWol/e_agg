@@ -42,7 +42,7 @@ class SyncService:
         self._paginator = paginator
         self._parser = parser
 
-    async def init_job(self):
+    async def init_jobs(self):
         """Инициализировать задачу синхронизации.
 
         В начале работы проверяется статус синхронизации и если он равен
