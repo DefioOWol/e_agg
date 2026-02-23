@@ -34,6 +34,7 @@ services:
       CAPASHINO_BASE_URL: ${CAPASHINO_BASE_URL:?}
       OUTBOX_SECONDS_INTERVAL: ${OUTBOX_SECONDS_INTERVAL:-3600}
       INBOX_SECONDS_TTL: ${INBOX_SECONDS_TTL:-3600}
+      INBOX_SECONDS_INTERVAL: ${INBOX_SECONDS_INTERVAL:-3600}
     volumes:
       - ./aggregator_app/alembic/versions:/app/alembic/versions
     depends_on:
