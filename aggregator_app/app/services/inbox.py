@@ -2,14 +2,16 @@
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import settings
 from app.orm.db_manager import db_manager
+from app.orm.models import Inbox
 from app.orm.uow import IUnitOfWork, SqlAlchemyUnitOfWork
-from app.services.utils import scheduler
+from app.services.utils import hash_dict, scheduler
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +36,8 @@ class InboxService:
 
         self._scheduler.add_job(
             self.process_expired,
-            trigger=self.INBOX_JOB_ID,
-            id=self.INBOX_JOB_TRIGGER,
+            trigger=self.INBOX_JOB_TRIGGER,
+            id=self.INBOX_JOB_ID,
             max_instances=1,
             next_run_time=datetime.now(UTC),
         )
@@ -51,6 +53,18 @@ class InboxService:
             uow.commit()
 
         logger.info("Удалено %d ключей", deleted_count)
+
+    async def get_inbox(self, key: str) -> Inbox | None:
+        """Получить запись inbox по ключу."""
+        async with self._uow as uow:
+            return await uow.inbox.get(key)
+
+    def check_conflict(
+        self, request_hash: str | None, data: dict[str, Any]
+    ) -> tuple[str, bool]:
+        """Проверить конфликт request_hash и хэша данных data."""
+        hashed = hash_dict(data)
+        return hashed, hashed == request_hash
 
 
 def get_inbox_service() -> InboxService:

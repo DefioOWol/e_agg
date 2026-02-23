@@ -1,5 +1,7 @@
 """Утилиты и вспомогательные элементы сервисов."""
 
+import hashlib
+import json
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from datetime import UTC
@@ -63,3 +65,9 @@ async def with_external_client(
     if on_success is None:
         return result
     return await on_success(result, **(on_success_kwargs or {}))
+
+
+def hash_dict(data: dict[str, Any]) -> str:
+    """Хэшировать словарь с данными."""
+    encoded = json.dumps(data, sort_keys=True).encode()
+    return hashlib.sha256(encoded).hexdigest()
