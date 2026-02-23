@@ -1,7 +1,7 @@
 """Тесты модуля EventsProvider."""
 
 from datetime import UTC, date, datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
@@ -15,17 +15,10 @@ from app.services.events_provider import (
 )
 from tests.helpers import (
     FakeEventsProviderClient,
+    get_external_client_mock_response,
     get_raw_event,
     get_raw_member,
 )
-
-
-def _get_mock_response(expected_result):
-    mock_response = AsyncMock()
-    mock_response.__aenter__.return_value = mock_response
-    mock_response.__aexit__.return_value = None
-    mock_response.json = AsyncMock(return_value=expected_result)
-    return mock_response
 
 
 def _get_events_provider_client() -> IEventsProviderClient:
@@ -40,7 +33,7 @@ async def test_get_events():
         "previous": None,
         "results": [],
     }
-    mock_response = _get_mock_response(expected_result)
+    mock_response = get_external_client_mock_response(expected_result)
 
     mock_session = MagicMock()
     mock_session.get.return_value = mock_response
@@ -66,7 +59,7 @@ async def test_get_events():
 @pytest.mark.asyncio
 async def test_get_seats():
     expected_result = {"seats": ["A1", "A2", "A3"]}
-    mock_response = _get_mock_response(expected_result)
+    mock_response = get_external_client_mock_response(expected_result)
 
     mock_session = MagicMock()
     mock_session.get.return_value = mock_response
@@ -84,7 +77,7 @@ async def test_get_seats():
 @pytest.mark.asyncio
 async def test_register_member():
     expected_result = {"ticket_id": str(uuid4())}
-    mock_response = _get_mock_response(expected_result)
+    mock_response = get_external_client_mock_response(expected_result)
 
     mock_session = MagicMock()
     mock_session.post.return_value = mock_response
@@ -105,7 +98,7 @@ async def test_register_member():
 @pytest.mark.asyncio
 async def test_unregister_member():
     expected_result = {"success": True}
-    mock_response = _get_mock_response(expected_result)
+    mock_response = get_external_client_mock_response(expected_result)
 
     mock_session = MagicMock()
     mock_session.delete.return_value = mock_response

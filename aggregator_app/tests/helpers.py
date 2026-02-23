@@ -2,6 +2,7 @@
 
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from alembic.config import Config
@@ -11,6 +12,7 @@ from app.orm.models import (
     Base,
     Event,
     EventStatus,
+    Inbox,
     Member,
     Outbox,
     OutboxStatus,
@@ -19,6 +21,7 @@ from app.orm.models import (
     SyncStatus,
 )
 from app.orm.repositories.event import IEventRepository
+from app.orm.repositories.inbox import IInboxRepository
 from app.orm.repositories.member import IMemberRepository
 from app.orm.repositories.outbox import IOutboxRepository
 from app.orm.repositories.place import IPlaceRepository
@@ -117,6 +120,14 @@ def get_raw_member():
         "email": "first.last@example.com",
         "seat": "A1",
     }
+
+
+def get_external_client_mock_response(expected_result):
+    mock_response = AsyncMock()
+    mock_response.__aenter__.return_value = mock_response
+    mock_response.__aexit__.return_value = None
+    mock_response.json = AsyncMock(return_value=expected_result)
+    return mock_response
 
 
 class FakeEventsProviderClient(IEventsProviderClient):
@@ -241,6 +252,27 @@ class FakeOutboxRepository(IOutboxRepository):
         return True
 
 
+class FakeInboxRepository(IInboxRepository):
+    def __init__(self, inbox=None):
+        self.inbox = inbox or {}
+
+    async def get(self, key):
+        return self.inbox.get(key)
+
+    def create(self, key, request_hash, response):
+        inbox = Inbox(key=key, request_hash=request_hash, response=response)
+        self.inbox[inbox.key] = inbox
+        return inbox
+
+    async def delete_expired(self):
+        deleted = 0
+        for inbox in self.inbox.values():
+            if inbox.expires_at <= datetime.now(UTC):
+                self.inbox.pop(inbox.key)
+                deleted += 1
+        return deleted
+
+
 class FakeUnitOfWork(IUnitOfWork):
     def __init__(self):
         self.events = FakeEventRepository()
@@ -248,6 +280,7 @@ class FakeUnitOfWork(IUnitOfWork):
         self.places = FakePlaceRepository()
         self.sync_meta = FakeSyncMetaRepository()
         self.outbox = FakeOutboxRepository()
+        self.inbox = FakeInboxRepository()
 
         self._began = False
         self.committed = False
