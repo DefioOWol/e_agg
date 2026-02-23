@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     - `lms_api_key` - API ключ для доступа к LMS.
     - `events_provider_base_url` - Базовый URL для доступа к EventsProvider API.
     - `capashino_base_url` - Базовый URL для доступа к Capashino API.
+    - `outbox_seconds_interval` - Интервал запуска воркера outbox в секундах.
 
     Свойства:
     - `database_url` - URL для подключения к базе данных.
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     lms_api_key: SecretStr
     events_provider_base_url: str
     capashino_base_url: str
+    outbox_seconds_interval: int
 
     @property
     def database_url(self) -> str:

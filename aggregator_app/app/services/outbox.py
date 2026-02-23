@@ -7,6 +7,7 @@ from typing import Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
+from app.config import settings
 from app.orm.db_manager import db_manager
 from app.orm.models import Outbox, OutboxStatus
 from app.orm.uow import IUnitOfWork, SqlAlchemyUnitOfWork
@@ -23,7 +24,9 @@ class OutboxService:
     """Сервис очереди событий."""
 
     OUTBOX_JOB_ID = "outbox-job"
-    OUTBOX_JOB_TRIGGER = IntervalTrigger(hours=1)
+    OUTBOX_JOB_TRIGGER = IntervalTrigger(
+        seconds=settings.outbox_seconds_interval
+    )
 
     def __init__(
         self,
