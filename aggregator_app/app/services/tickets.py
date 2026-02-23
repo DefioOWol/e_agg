@@ -40,13 +40,18 @@ class TicketsService:
             )
 
     async def register(
-        self, event_id: UUID, member_data: dict[str, Any]
+        self,
+        event_id: UUID,
+        member_data: dict[str, Any],
+        idempotency_data: dict[str, Any] | None = None,
     ) -> str:
         """Зарегистрировать участника на событие.
 
         Аргументы:
         - `event_id` - UUID события.
         - `member_data` - Данные участника, готовые к JSON-сериализации.
+        - `idempotency_data` - Данные для создания записи идемпотентности;
+            по умолчанию None.
 
         Возвращает:
         - UUID билета участника.
@@ -60,6 +65,7 @@ class TicketsService:
             on_success_kwargs={
                 "event_id": event_id,
                 "member_data": member_data,
+                "idempotency_data": idempotency_data,
             },
             on_error=self._raise_external_error,
         )
@@ -75,14 +81,25 @@ class TicketsService:
         return result["ticket_id"]
 
     async def _create_member(
-        self, ticket_id: str, event_id: UUID, member_data: dict[str, Any]
+        self,
+        ticket_id: str,
+        event_id: UUID,
+        member_data: dict[str, Any],
+        idempotency_data: dict[str, Any] | None,
     ) -> str:
         """Создать участника в локальной базе данных."""
         member_data.update({"ticket_id": ticket_id, "event_id": str(event_id)})
+
         async with self._uow as uow:
             async with uow.begin():
                 uow.members.create(member_data)
                 uow.outbox.create(OutboxType.TICKET_REGISTER, member_data)
+
+                if idempotency_data:
+                    uow.inbox.create(
+                        **idempotency_data, response={"ticket_id": ticket_id}
+                    )
+
         return ticket_id
 
     async def unregister(self, event_id: UUID, ticket_id: UUID):

@@ -1,12 +1,16 @@
 """API регистрации участников."""
 
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.dependencies import get_events_service, get_tickets_service
+from app.api.dependencies import (
+    get_events_service,
+    get_idempotency_data,
+    get_tickets_service,
+)
 from app.api.schemas.members import MemberIn
 from app.orm.models import EventStatus
 from app.services.events import EventsService
@@ -28,6 +32,9 @@ EXTERNAL_API_ERROR_RESPONSE = {
     responses={
         **EXTERNAL_API_ERROR_RESPONSE,
         status.HTTP_404_NOT_FOUND: {"description": "Событие не найдено"},
+        status.HTTP_409_CONFLICT: {
+            "description": "Ключ идемпотентности уже существует"
+        },
         status.HTTP_400_BAD_REQUEST: {
             "description": (
                 "Событие не опубликовано"
@@ -41,6 +48,9 @@ async def register(
     member: MemberIn,
     events_service: Annotated[EventsService, Depends(get_events_service)],
     tickets_service: Annotated[TicketsService, Depends(get_tickets_service)],
+    idempotency_data: Annotated[
+        dict[str, Any] | None, Depends(get_idempotency_data)
+    ],
 ):
     """Зарегистрировать участника на событие.
 
@@ -51,6 +61,9 @@ async def register(
     - {"ticket_id": UUID} - UUID билета участника.
 
     """
+    if idempotency_data and (response := idempotency_data.get("response")):
+        return response
+
     event = await events_service.get_by_id(member.event_id)
     if not event:
         raise HTTPException(
@@ -72,9 +85,10 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Seat is not available",
         )
+
     member_data = member.model_dump()
     ticket_id = await tickets_service.register(
-        member_data.pop("event_id"), member_data
+        member_data.pop("event_id"), member_data, idempotency_data
     )
     return {"ticket_id": ticket_id}
 
