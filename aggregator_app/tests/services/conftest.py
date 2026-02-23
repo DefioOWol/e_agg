@@ -6,6 +6,7 @@ import pytest
 
 from app.services.events import EventsService
 from app.services.events_provider import EventsPaginator, EventsProviderParser
+from app.services.inbox import InboxService
 from app.services.outbox import OutboxService
 from app.services.sync import SyncService
 from app.services.tickets import TicketsService
@@ -49,6 +50,11 @@ def sync_service(uow, scheduler, events_provider_client):
         EventsPaginator(),
         EventsProviderParser(),
     )
+
+
+@pytest.fixture
+def inbox_service(uow, scheduler):
+    return InboxService(uow, scheduler)
 
 
 @pytest.fixture
