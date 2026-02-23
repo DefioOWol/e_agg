@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     - `events_provider_base_url` - Базовый URL для доступа к EventsProvider API.
     - `capashino_base_url` - Базовый URL для доступа к Capashino API.
     - `outbox_seconds_interval` - Интервал запуска воркера outbox в секундах.
+    - `inbox_seconds_ttl` - Время жизни inbox в секундах.
 
     Свойства:
     - `database_url` - URL для подключения к базе данных.
@@ -32,6 +33,7 @@ class Settings(BaseSettings):
     events_provider_base_url: str
     capashino_base_url: str
     outbox_seconds_interval: int
+    inbox_seconds_ttl: int
 
     @property
     def database_url(self) -> str:
