@@ -7,7 +7,8 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from app.orm.models import EventStatus, Member
+from app.orm.models import EventStatus, Inbox, Member
+from app.services.utils import hash_dict
 from tests.helpers import (
     FakeEventsProviderClient,
     FakeUnitOfWork,
@@ -112,6 +113,64 @@ async def test_register_validation_seat_error(client: AsyncClient):
     response = await client.post("/tickets", json=member_data)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "seat" in response.json()["body"]
+
+
+@pytest.mark.asyncio
+async def test_register_idempotency_key_non_exists(
+    client: AsyncClient,
+    uow: FakeUnitOfWork,
+    provider_client: FakeEventsProviderClient,
+):
+    event = create_event(
+        status=EventStatus.PUBLISHED, timedelta=timedelta(hours=1)
+    )
+    uow.events.events = {event.id: event}
+
+    provider_client.kwargs["seats"] = {"seats": ["A1"]}
+    ticket_id = str(uuid4())
+    provider_client.kwargs["ticket_id"] = {"ticket_id": ticket_id}
+
+    member_data = get_raw_member() | {"event_id": str(event.id)}
+    hashed_request = hash_dict(member_data)
+    member_data["idempotency_key"] = "123"
+    response = await client.post("/tickets", json=member_data)
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert uow.inbox.inbox["123"].request_hash == hashed_request
+    assert uow.inbox.inbox["123"].response == {"ticket_id": ticket_id}
+
+
+@pytest.mark.asyncio
+async def test_register_idempotency_key_already_exists(
+    client: AsyncClient, uow: FakeUnitOfWork
+):
+    member_data = get_raw_member() | {"event_id": str(uuid4())}
+    saved_response = {"ticket_id": "123"}
+    inbox = Inbox(
+        key="123", request_hash=hash_dict(member_data), response=saved_response
+    )
+    uow.inbox.inbox = {inbox.key: inbox}
+
+    member_data["idempotency_key"] = inbox.key
+    response = await client.post("/tickets", json=member_data)
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json() == saved_response
+
+
+@pytest.mark.asyncio
+async def test_register_idempotency_key_conflict(
+    client: AsyncClient, uow: FakeUnitOfWork
+):
+    member_data = get_raw_member() | {"event_id": "123"}
+    inbox = Inbox(key="123", request_hash=hash_dict(member_data))
+    uow.inbox.inbox = {inbox.key: inbox}
+
+    member_data["idempotency_key"] = inbox.key
+    member_data["event_id"] = str(uuid4())
+
+    response = await client.post("/tickets", json=member_data)
+    assert response.status_code == status.HTTP_409_CONFLICT
+    assert response.json()["detail"] == "Idempotency key already exists"
 
 
 @pytest.mark.asyncio

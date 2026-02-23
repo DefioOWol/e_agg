@@ -10,6 +10,7 @@ from app.api.dependencies import get_events_service, get_tickets_service
 from app.main import app
 from app.services.events import EventsService
 from app.services.events_provider import EventsPaginator, EventsProviderParser
+from app.services.inbox import InboxService, get_inbox_service
 from app.services.sync import SyncService, get_sync_service
 from app.services.tickets import TicketsService
 from tests.helpers import FakeEventsProviderClient, FakeUnitOfWork
@@ -36,9 +37,15 @@ def tickets_service(uow, provider_client):
 
 
 @pytest.fixture
-def sync_service(uow, provider_client):
+def scheduler():
     scheduler = MagicMock()
+    scheduler.add_job = MagicMock()
     scheduler.modify_job = MagicMock()
+    return scheduler
+
+
+@pytest.fixture
+def sync_service(uow, provider_client, scheduler):
     return SyncService(
         uow,
         scheduler,
@@ -48,11 +55,17 @@ def sync_service(uow, provider_client):
     )
 
 
+@pytest.fixture
+def inbox_service(uow, scheduler):
+    return InboxService(uow, scheduler)
+
+
 @pytest_asyncio.fixture
-async def client(events_service, tickets_service, sync_service):
+async def client(events_service, tickets_service, sync_service, inbox_service):
     app.dependency_overrides[get_events_service] = lambda: events_service
     app.dependency_overrides[get_tickets_service] = lambda: tickets_service
     app.dependency_overrides[get_sync_service] = lambda: sync_service
+    app.dependency_overrides[get_inbox_service] = lambda: inbox_service
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
