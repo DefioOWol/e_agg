@@ -49,10 +49,10 @@ async def test_get_none(session: AsyncSession):
 async def test_delete_expired(session: AsyncSession):
     repo = _get_inbox_repository(session)
     inbox = repo.create("key1", "hash", {"response": "response"})
-    inbox.expires_at = get_datetime_now() - timedelta(hour=1)
+    inbox.expires_at = get_datetime_now() - timedelta(hours=1)
 
     inbox = repo.create("key2", "hash", {"response": "response"})
-    inbox.expires_at = get_datetime_now() + timedelta(hour=1)
+    inbox.expires_at = get_datetime_now() + timedelta(hours=1)
     await session.flush()
 
     deleted = await repo.delete_expired()
