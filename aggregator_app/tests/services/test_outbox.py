@@ -52,6 +52,7 @@ async def test_process_waiting_call_notify(
 ):
     item = uow.outbox.create(OutboxType.TICKET_REGISTER, {"ticket_id": "123"})
     client = MagicMock()
+    client.notify = AsyncMock()
     outbox_service._client = client
     await outbox_service.process_waiting()
     assert client.notify.called
