@@ -92,7 +92,11 @@ class OutboxService:
 
     async def _handle_error(self, e: Exception) -> bool:
         """Обработать ошибку внешнего API."""
-        logger.exception("Ошибка при обработке события в очереди: %s", str(e))
+        message = (
+            f"{getattr(e, 'status', 'XXX')}"
+            f" {getattr(e, 'message', 'Unknown error')}"
+        )
+        logger.exception("Ошибка при обработке события в очереди: %s", message)
         return False
 
 
