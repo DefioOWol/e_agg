@@ -63,6 +63,37 @@ async def test_register_member_with_outbox(
 
 
 @pytest.mark.asyncio
+async def test_register_member_with_none_idempotency_data(
+    uow: FakeUnitOfWork, events_provider_client: FakeEventsProviderClient
+):
+    events_provider_client.kwargs["ticket_id"] = {"ticket_id": str(uuid4())}
+    service = TicketsService(uow, events_provider_client)
+    await service.register(uuid4(), get_raw_member())
+    assert len(uow.inbox.inbox) == 0
+    assert uow.committed
+
+
+@pytest.mark.asyncio
+async def test_register_member_with_idempotency_data(
+    uow: FakeUnitOfWork, events_provider_client: FakeEventsProviderClient
+):
+    key = str(uuid4())
+    idempotency_data = {"key": key, "request_hash": str(uuid4())}
+
+    ticket_id = str(uuid4())
+    events_provider_client.kwargs["ticket_id"] = {"ticket_id": ticket_id}
+
+    service = TicketsService(uow, events_provider_client)
+    await service.register(uuid4(), get_raw_member(), idempotency_data)
+
+    assert len(uow.inbox.inbox) == 1
+    assert uow.inbox.inbox[key].key == key
+    assert uow.inbox.inbox[key].request_hash == idempotency_data["request_hash"]
+    assert uow.inbox.inbox[key].response == {"ticket_id": ticket_id}
+    assert uow.committed
+
+
+@pytest.mark.asyncio
 async def test_unregister_member(
     uow: FakeUnitOfWork, events_provider_client: FakeEventsProviderClient
 ):
